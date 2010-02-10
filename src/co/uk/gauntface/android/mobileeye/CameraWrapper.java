@@ -1,6 +1,7 @@
 package co.uk.gauntface.android.mobileeye;
 
 import android.hardware.Camera;
+import android.os.Handler;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
@@ -8,12 +9,19 @@ public class CameraWrapper
 {
 	private Camera mCamera;
 	private boolean mPreviewing;
+	private boolean mFocusing;
+	
 	private EyeCameraCallback mErrorCallback;
 	private EyePreviewCallback mPreviewCallback;
+	private EyeAutoFocusCallback mAutoFocusCallback;
 	
-	public CameraWrapper()
+	public static Handler mHandler;
+	
+	public CameraWrapper(Handler h)
 	{
 		mPreviewing = false;
+		
+		mHandler = h;
 	}
 	
 	public void startPreview(SurfaceHolder holder) throws CameraHardwareException
@@ -93,6 +101,7 @@ public class CameraWrapper
 		if(mCamera != null)
 		{
 			mCamera.setPreviewCallback(null);
+			mCamera.autoFocus(null);
 			
             stopPreview();
             mCamera.release();
@@ -125,5 +134,12 @@ public class CameraWrapper
 	public boolean isPreviewing()
 	{
 		return mPreviewing;
+	}
+
+	public void startAutoFocus()
+	{
+		Log.v(Singleton.TAG, "Starting Autofocus");
+		mAutoFocusCallback = new EyeAutoFocusCallback();
+		mCamera.autoFocus(mAutoFocusCallback);
 	}
 }

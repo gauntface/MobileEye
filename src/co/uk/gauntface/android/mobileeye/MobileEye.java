@@ -2,6 +2,8 @@ package co.uk.gauntface.android.mobileeye;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -11,10 +13,16 @@ import android.view.SurfaceHolder.Callback;
 
 public class MobileEye extends Activity implements Callback
 {
+	public static final int START_AUTO_FOCUS = 0;
+	
+	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
+	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
+	
 	private SurfaceView mSurfaceView;
 	private boolean mStartPreviewFail;
 	private CameraWrapper mCamera;
 	private SurfaceHolder mSurfaceHolder;
+	private Handler mHandler;
 	
     /** Called when the activity is first created. */
     @Override
@@ -52,16 +60,6 @@ public class MobileEye extends Activity implements Callback
                 return;
             }
         }
-
-        //if (mSurfaceHolder != null) {
-            // If first time initialization is not finished, put it in the
-            // message queue.
-            //if (!mFirstTimeInitialized) {
-            //    mHandler.sendEmptyMessage(FIRST_TIME_INIT);
-            //} else {
-            //    initializeSecondTime();
-            //}
-        //}
     }
     
     @Override
@@ -79,7 +77,29 @@ public class MobileEye extends Activity implements Callback
     
     private void initActivity()
     {
-    	mCamera = new CameraWrapper();
+    	mHandler = new Handler(){
+    		
+    		public void handleMessage(Message msg)
+    		{
+    			if(msg.arg1 == START_AUTO_FOCUS)
+    			{
+    				// Was prev auto_focus successful
+    				if(msg.arg2 == AUTO_FOCUS_SUCCESSFUL)
+    				{
+    					// Previous auto focus successful
+    				}
+    				else
+    				{
+    					// Previous auto focus unsuccessful
+    				}
+    				
+    				// Start Auto Focus
+    				mCamera.startAutoFocus();
+    			}
+    		}
+    		
+    	};
+    	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
     	
     	/*
@@ -150,6 +170,8 @@ public class MobileEye extends Activity implements Callback
 		{
 			mCamera.setPreviewDisplay(mSurfaceHolder);
 		}
+		
+		mCamera.startAutoFocus();
 	}
 
 	public void surfaceCreated(SurfaceHolder holder)
