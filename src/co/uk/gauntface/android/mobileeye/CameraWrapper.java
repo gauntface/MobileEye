@@ -99,9 +99,9 @@ public class CameraWrapper
 		Log.d(Singleton.TAG, "Camera - closeCamera()");
 		
 		if(mCamera != null)
-		{
+		{   
+			mCamera.cancelAutoFocus();
 			mCamera.setPreviewCallback(null);
-			mCamera.autoFocus(null);
 			
             stopPreview();
             mCamera.release();

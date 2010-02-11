@@ -94,7 +94,10 @@ public class MobileEye extends Activity implements Callback
     				}
     				
     				// Start Auto Focus
-    				mCamera.startAutoFocus();
+    				if(mCamera.isNull() == false && mCamera.isPreviewing() == true)
+    				{
+    					mCamera.startAutoFocus();
+    				}
     			}
     		}
     		
@@ -134,6 +137,8 @@ public class MobileEye extends Activity implements Callback
             if (mStartPreviewFail == true)
             {
                 //showCameraErrorAndFinish();
+            	Log.e(Singleton.TAG, "ERROR: Start Preview of the camera failed");
+            	finish();
                 return;
             }
         }
