@@ -1,6 +1,8 @@
 package co.uk.gauntface.android.mobileeye;
 
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
+import android.hardware.Camera.Size;
 import android.os.Handler;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -37,12 +39,12 @@ public class CameraWrapper
 		
 		setPreviewDisplay(holder);
 		
-		setCameraParameters();
+		Size previewSize = setCameraParameters();
 		
 		mErrorCallback = new EyeCameraCallback();
 		mCamera.setErrorCallback(mErrorCallback);
 		
-		mPreviewCallback = new EyePreviewCallback();
+		mPreviewCallback = new EyePreviewCallback(previewSize);
 		mCamera.setPreviewCallback(mPreviewCallback);
 		
 		try
@@ -57,14 +59,17 @@ public class CameraWrapper
 		mPreviewing = true;
 	}
 	
-	private void setCameraParameters()
+	private Size setCameraParameters()
 	{
 		// Set up camera settings here
 		Camera.Parameters params = mCamera.getParameters();
 		params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-		params.setColorEffect(Camera.Parameters.EFFECT_MONO);
+		params.setPreviewFormat(PixelFormat.RGB_565);
+		Size previewSize = params.getPreviewSize();
 		
 		mCamera.setParameters(params);
+		
+		return previewSize;
 	}
 	
 	public void stopPreview()
@@ -138,7 +143,7 @@ public class CameraWrapper
 
 	public void startAutoFocus()
 	{
-		Log.v(Singleton.TAG, "Starting Autofocus");
+		//Log.v(Singleton.TAG, "Starting Autofocus");
 		mAutoFocusCallback = new EyeAutoFocusCallback();
 		mCamera.autoFocus(mAutoFocusCallback);
 	}
