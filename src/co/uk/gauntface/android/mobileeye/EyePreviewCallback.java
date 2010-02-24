@@ -3,6 +3,7 @@ package co.uk.gauntface.android.mobileeye;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
+import android.util.Log;
 
 public class EyePreviewCallback implements PreviewCallback
 {
