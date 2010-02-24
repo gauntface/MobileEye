@@ -64,7 +64,7 @@ public class CameraWrapper
 		// Set up camera settings here
 		Camera.Parameters params = mCamera.getParameters();
 		params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-		params.setPreviewFormat(PixelFormat.RGB_565);
+		params.setPreviewFormat(PixelFormat.YCbCr_420_SP);
 		Size previewSize = params.getPreviewSize();
 		
 		mCamera.setParameters(params);

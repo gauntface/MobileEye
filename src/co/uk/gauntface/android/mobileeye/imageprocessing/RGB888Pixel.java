@@ -13,8 +13,25 @@ public class RGB888Pixel
 		mBlue = blue;
 	}
 	
-	public int getGrayscaleValue()
+	public RGB888Pixel(int red, int green, int blue)
 	{
-		return (int) ((0.3 * mRed) + (0.59 * mGreen) + (0.11 * mBlue));
+		mRed = red;
+		mGreen = green;
+		mBlue = blue;
+	}
+
+	public int getRed()
+	{
+		return mRed;
+	}
+	
+	public int getGreen()
+	{
+		return mGreen;
+	}
+	
+	public int getBlue()
+	{
+		return mBlue;
 	}
 }

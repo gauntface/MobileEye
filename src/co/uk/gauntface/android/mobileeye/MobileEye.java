@@ -1,6 +1,15 @@
 package co.uk.gauntface.android.mobileeye;
 
+import co.uk.gauntface.android.mobileeye.imageprocessing.RGB565;
+import co.uk.gauntface.android.mobileeye.imageprocessing.RGB888Pixel;
+import co.uk.gauntface.android.mobileeye.imageprocessing.YCbCr420Pixel;
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -10,15 +19,25 @@ import android.view.SurfaceView;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.SurfaceHolder.Callback;
+import android.widget.ImageView;
 
 public class MobileEye extends Activity implements Callback
 {
+	/**
+	 * Handler arg1 Values
+	 */
 	public static final int START_AUTO_FOCUS = 0;
+	public static final int DRAW_IMAGE_PROCESSING = 1;
 	
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
 	
+	public static final String IMAGE_PROCESSED_DATA = "ImageProcessData";
+	public static final String IMAGE_PROCESSED_WIDTH = "ImageProcessWidth";
+	public static final String IMAGE_PROCESSED_HEIGHT = "ImageProcessHeight";
+	
 	private SurfaceView mSurfaceView;
+	private ImageView mImageProcessedSurfaceView;
 	private boolean mStartPreviewFail;
 	private CameraWrapper mCamera;
 	private SurfaceHolder mSurfaceHolder;
@@ -99,11 +118,112 @@ public class MobileEye extends Activity implements Callback
     					mCamera.startAutoFocus();
     				}
     			}
+    			else if(msg.arg1 == DRAW_IMAGE_PROCESSING)
+    			{
+    				final byte[] data = msg.getData().getByteArray(IMAGE_PROCESSED_DATA);
+    				final int width = msg.getData().getInt(IMAGE_PROCESSED_WIDTH);
+    				final int height = msg.getData().getInt(IMAGE_PROCESSED_HEIGHT);
+    				
+    				Runnable showImage = new Runnable(){
+
+						public void run()
+						{
+							// Used in Gaussian Blur so needs to be changed
+							YCbCr420Pixel[] pixels = YCbCr420Pixel.convert(data, width, height);
+							
+							Bitmap b = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+							
+							for(int row = 0; row < height; row++)
+							{
+								for(int col = 0; col < width; col++)
+								{
+									//Log.v(Singleton.TAG, "col = " + col + " row = " + row + " RGB = ("+pixels[row][col].getRedValue()+","+pixels[row][col].getGreenValue()+","+pixels[row][col].getBlueValue()+")");
+									//b.setPixel(col, row, Color.argb(255, pixels[row][col].getRedValue(), pixels[row][col].getGreenValue(), pixels[row][col].getBlueValue()));
+									//b.setPixel(col, row, Color.argb(255, pixels[(row * width) + col].getRedValue(), pixels[(row * width) + col].getGreenValue(), pixels[(row * width) + col].getBlueValue()));
+									b.setPixel(col, row, Color.argb(0, 0, 0, 0));
+								}
+							}
+							
+							double wP = mImageProcessedSurfaceView.getWidth();
+							double hP = mImageProcessedSurfaceView.getHeight();
+							double wB = b.getWidth();
+							double hB = b.getHeight();
+							double menos=1;
+							double i = 1;
+							double j = 1;
+
+							Log.v(Singleton.TAG, "Surface="+wP+" x "+hP+"   Bitmap="+wB+" x "+hB);
+							
+							if (wP < wB)
+							{
+								i = wP/wB;
+							}
+							
+							if (hP < hB)
+							{
+								j= hP/hB;
+							}
+
+							menos = Math.min(i,j);
+
+							int wTotal = (int)(wB*menos);
+							int hTotal = (int)(hB*menos);
+							int left = (int)((wP-wTotal)/2);
+							int top = (int)((hP-hTotal)/2);
+
+							//mImageProcessedSurfaceView.setImageBitmap(b);
+							
+							//Canvas canvas = mImageProcessedSurfaceView.getHolder().lockCanvas();
+							
+							//if(canvas != null)
+							//{
+								//canvas.drawColor(Color.BLACK);
+								//Log.v(Singleton.TAG, "left="+left+" top="+top+" width="+(wTotal+left)+" height="+(hTotal+top));
+								//canvas.drawBitmap(b, new Rect(0,0,b.getWidth(),b.getHeight()), new Rect(left,top,wTotal+left,hTotal+top), null);
+								//canvas.save();
+								//mImageProcessedSurfaceView.getHolder().unlockCanvasAndPost(canvas);
+							
+								/**for(int i = 0; i < data.length; i = (i + 2)*width)
+								{
+									for(int j = 0; (j < data.length) && ((j / 2) < width); j = j + 2)
+									{
+										int col = i % width;
+										int row = (i - col) / width;
+										
+										b.setPixel(row, col, Color.argb(100, pixels[row][col].getRedValue(), pixels[row][col].getGreenValue(), pixels[row][col].getBlueValue()));
+									}
+								}**/
+							
+								//Log.v(Singleton.TAG, "Here ready to set Bitmap to SurfaceView");
+							//}
+							//else
+							//{
+								//Log.v(Singleton.TAG, "ImageView == null");
+							//}
+							
+						}
+    					
+    				};
+    				Thread showImageThread = new Thread(showImage);
+    				showImageThread.start();
+    				Log.v(Singleton.TAG, "Started Thread to show image");
+    				
+    				mHandler.post(new Runnable(){
+
+						public void run()
+						{
+							mImageProcessedSurfaceView.setImageBitmap(Singleton.updateImaveView);
+						}
+    					
+    				});
+    			}
     		}
     		
     	};
     	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
+    	
+    	mImageProcessedSurfaceView = (ImageView) findViewById(R.id.ImageProcessedSurfaceView);
     	
     	/*
          * To reduce startup time, we start the preview in another thread.
