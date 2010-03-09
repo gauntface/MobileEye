@@ -1,8 +1,5 @@
 package co.uk.gauntface.android.mobileeye;
 
-import co.uk.gauntface.android.mobileeye.imageprocessing.RGB565;
-import co.uk.gauntface.android.mobileeye.imageprocessing.RGB888Pixel;
-import co.uk.gauntface.android.mobileeye.imageprocessing.YCbCr420Pixel;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -31,10 +28,6 @@ public class MobileEye extends Activity implements Callback
 	
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
-	
-	public static final String IMAGE_PROCESSED_DATA = "ImageProcessData";
-	public static final String IMAGE_PROCESSED_WIDTH = "ImageProcessWidth";
-	public static final String IMAGE_PROCESSED_HEIGHT = "ImageProcessHeight";
 	
 	private SurfaceView mSurfaceView;
 	private ImageView mImageProcessedSurfaceView;
@@ -115,7 +108,7 @@ public class MobileEye extends Activity implements Callback
     				// Start Auto Focus
     				if(mCamera.isNull() == false && mCamera.isPreviewing() == true)
     				{
-    					mCamera.startAutoFocus();
+    					//mCamera.startAutoFocus();
     				}
     			}
     			else if(msg.arg1 == DRAW_IMAGE_PROCESSING)
@@ -124,7 +117,7 @@ public class MobileEye extends Activity implements Callback
 
 						public void run()
 						{
-							mImageProcessedSurfaceView.setImageBitmap(Singleton.updateImaveView);
+							mImageProcessedSurfaceView.setImageBitmap(Singleton.updateImageView);
 						}
     					
     				});

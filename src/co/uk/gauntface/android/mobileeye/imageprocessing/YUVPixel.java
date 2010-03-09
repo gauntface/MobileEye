@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 public class YUVPixel
 {
 	private byte[] mData;
+	private int[] mPixels;
 	private int mImgWidth;
 	private int mImgHeight;
 	private int mLeftOffset;
@@ -28,27 +29,79 @@ public class YUVPixel
 				|| mTopOffset + mCroppedImgHeight > mImgHeight) {
 			throw new IllegalArgumentException("Crop rectangle does not fit within image data.");
 		}
+		
+		createPixels();
+		
+		//convertToPixels();
 	}
 	
-	public Bitmap renderCroppedGreyscaleBitmap()
+	private void createPixels()
 	{
-	    int[] pixels = new int[mCroppedImgWidth * mCroppedImgHeight];
-	    byte[] yuv = mData;
+		mPixels = new int[mCroppedImgWidth * mCroppedImgHeight];
+		int inputOffset = mTopOffset * mImgWidth + mLeftOffset;
+		
+		for (int y = 0; y < mCroppedImgHeight; y++)
+	    {
+	    	int outputOffset = y * mCroppedImgWidth;
+	    	for (int x = 0; x < mCroppedImgWidth; x++)
+	    	{
+	    		int grey = mData[inputOffset + x] & 0xff;
+	    		mPixels[outputOffset + x] = grey;
+	    	}
+	    	inputOffset = inputOffset + mImgWidth;
+	    }
+		
+	}
+	
+	/**
+	 * int[] pixels - a single array of pixel values (0 - 255?)
+	 * byte[] yuv - just a copy of the data
+	 * int inputOffset - the position in the 1D array of pixels
+	 * 
+	 * int grey - By ANDing yuv value with 0xff == 0b11111111 you remove negative values of yuv and make it 0 - 255
+	 * pixels[Assignment] :
+	 * 			0xXX000000 Alpha value of pixels - allows ghosting effect
+	 * 			0x00010101 NOTE: This is hex NOT decimal
+	 * 			grey * 0x00010101 - this is simply setting the grey value to Red, Green, Blue Color components
+	 * @return
+	 */
+	private void convertToPixels()
+	{
+		/**mPixels = new long[mCroppedImgWidth * mCroppedImgHeight];
 	    int inputOffset = mTopOffset * mImgWidth + mLeftOffset;
 
 	    for (int y = 0; y < mCroppedImgHeight; y++)
 	    {
-	      int outputOffset = y * mCroppedImgWidth;
-	      for (int x = 0; x < mCroppedImgWidth; x++)
-	      {
-	    	  int grey = yuv[inputOffset + x] & 0xff;
-	    	  pixels[outputOffset + x] = 0xFF000000 | (grey * 0x00010101);
-	      }
-	      inputOffset += mImgWidth;
-	    }
-
-	    Bitmap bitmap = Bitmap.createBitmap(mCroppedImgWidth, mCroppedImgHeight, Bitmap.Config.ARGB_8888);
-	    bitmap.setPixels(pixels, 0, mCroppedImgWidth, 0, 0, mCroppedImgWidth, mCroppedImgHeight);
-	    return bitmap;
-	  }
+	    	int outputOffset = y * mCroppedImgWidth;
+	    	for (int x = 0; x < mCroppedImgWidth; x++)
+	    	{
+	    		int grey = mData[inputOffset + x] & 0xff;
+	    		mPixels[outputOffset + x] = 0xff000000 | (grey * 0x00010101);
+	    	}
+	    	inputOffset = inputOffset + mImgWidth;
+	    }**/
+	}
+	
+	public int[] getPixels()
+	{
+		return mPixels;
+	}
+	
+	public int getImgWidth()
+	{
+		return mCroppedImgWidth;
+	}
+	
+	public int getImgHeight()
+	{
+		return mCroppedImgHeight;
+	}
+	
+	public Bitmap renderCroppedGreyscaleBitmap()
+	{
+	    //Bitmap bitmap = Bitmap.createBitmap(mCroppedImgWidth, mCroppedImgHeight, Bitmap.Config.ARGB_8888);
+	    //bitmap.setPixels(, 0, mCroppedImgWidth, 0, 0, mCroppedImgWidth, mCroppedImgHeight);
+	    //return bitmap;
+		return null;
+	}
 }

@@ -67,7 +67,14 @@ public class CameraWrapper
 		params.setPreviewFormat(PixelFormat.YCbCr_420_SP);
 		Size previewSize = params.getPreviewSize();
 		
-		mCamera.setParameters(params);
+		try
+		{
+			mCamera.setParameters(params);
+		}
+		catch(Exception e)
+		{
+			Log.e(Singleton.TAG, "CameraWrapper: Exception - " + e);
+		}
 		
 		return previewSize;
 	}

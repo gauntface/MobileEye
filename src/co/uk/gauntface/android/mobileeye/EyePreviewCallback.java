@@ -9,18 +9,27 @@ public class EyePreviewCallback implements PreviewCallback
 {
 	private Size mPreviewSize;
 	private ImageProcessingThread mProcessingThread;
+	private boolean mFirstPreview;
 	
 	public EyePreviewCallback(Size previewSize)
 	{
 		mPreviewSize = previewSize;
+		mFirstPreview = true;
 	}
 	
 	public void onPreviewFrame(byte[] data, Camera camera)
 	{
-		if(mProcessingThread == null || mProcessingThread.isAlive() == false)
+		if(mFirstPreview == false)
 		{
-			mProcessingThread = new ImageProcessingThread(mPreviewSize, data);
-			mProcessingThread.start();
+			if(mProcessingThread == null || mProcessingThread.isAlive() == false)
+			{
+				mProcessingThread = new ImageProcessingThread(mPreviewSize, data);
+				mProcessingThread.start();
+			}
+		}
+		else
+		{
+			mFirstPreview = false;
 		}
 	}
 

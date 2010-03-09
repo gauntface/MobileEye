@@ -5,5 +5,5 @@ import android.graphics.Bitmap;
 public class Singleton
 {
 	public static final String TAG = new String("mobileeye");
-	public static Bitmap updateImaveView;
+	public static Bitmap updateImageView;
 }

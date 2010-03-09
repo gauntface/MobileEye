@@ -1,0 +1,238 @@
+package co.uk.gauntface.android.mobileeye.imageprocessing;
+
+import co.uk.gauntface.android.mobileeye.Singleton;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Rect;
+import android.util.Log;
+
+public class IPUtility
+{
+	// Taken from com.android.contacts.AttachImage
+	public static Bitmap transformPhoto(Matrix scaler, Bitmap src, int targetWidth, int targetHeight, boolean scaleUp)
+	{
+		int deltaX = src.getWidth() - targetWidth;
+		int deltaY = src.getHeight() - targetHeight;
+		
+		if(!scaleUp && (deltaX < 0 || deltaY < 0))
+		{
+			/*
+			* In this case the bitmap is smaller, at least in one dimension,
+			* than the target.  Transform it by placing as much of the image
+			* as possible into the target and leaving the top/bottom or
+			* left/right (or both) black.
+			*/
+			Bitmap b2 = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
+			Canvas c = new Canvas(b2);
+
+			int deltaXHalf = Math.max(0, deltaX / 2);
+			int deltaYHalf = Math.max(0, deltaY / 2);
+			Rect srcRect = new Rect(deltaXHalf, deltaYHalf, deltaXHalf + Math.min(targetWidth, src.getWidth()), deltaYHalf + Math.min(targetHeight, src.getHeight()));
+			int dstX = (targetWidth  - srcRect.width())  / 2;
+			int dstY = (targetHeight - srcRect.height()) / 2;
+			
+			Rect dst = new Rect(dstX, dstY, targetWidth - dstX, targetHeight - dstY);
+			c.drawBitmap(src, srcRect, dst, null);
+			
+			return b2;
+		}
+		
+		float bitmapWidthF = src.getWidth();
+		float bitmapHeightF = src.getHeight();
+
+		float bitmapAspect = bitmapWidthF / bitmapHeightF;
+		float viewAspect   = (float) targetWidth / targetHeight;
+
+		if (bitmapAspect > viewAspect)
+		{
+			float scale = targetHeight / bitmapHeightF;
+			if (scale < .9F || scale > 1F)
+			{
+				scaler.setScale(scale, scale);
+			}
+			else
+			{
+				scaler = null;
+			}
+		}
+		else
+		{
+			float scale = targetWidth / bitmapWidthF;
+			if (scale < .9F || scale > 1F)
+			{
+				scaler.setScale(scale, scale);
+			}
+			else
+			{
+				scaler = null;
+			}
+		}
+		
+		Bitmap b1;
+		if (scaler != null)
+		{
+			// this is used for minithumb and crop, so we want to filter here.
+			b1 = Bitmap.createBitmap(src, 0, 0,
+			src.getWidth(), src.getHeight(), scaler, true);
+		}
+		else
+		{
+			b1 = src;
+		}
+		
+		int dx1 = Math.max(0, b1.getWidth() - targetWidth);
+		int dy1 = Math.max(0, b1.getHeight() - targetHeight);
+
+		Bitmap b2 = Bitmap.createBitmap(b1, dx1 / 2, dy1 / 2, targetWidth, targetHeight);
+		
+		if (b1 != src)
+		{
+			b1.recycle();
+		}
+
+		return b2;
+	}
+	
+	public static int[] convolve(int[] pixels, int width, int height, double[] kernel, int kernelSize, double kernelTotal)
+	{
+		if((pixels.length & 0x1) == 0x0)
+		{
+			//Log.v(Singleton.TAG, "FFT Start <!--------------- width = " + width + " height = " + height);
+			//ComplexNumber[] pixelFreqDomain = computeFreqDomain(pixels);
+			//Log.v(Singleton.TAG, "FFT Complete");
+			
+			int avgPixelValue = 0;
+			
+			int halfKernel = (int) Math.floor(kernelSize / 2);
+			int[] convolvedPixels = new int[pixels.length];
+			
+			for(int y = 0; y < height; y++)
+			{
+				int pixelOffset = y * width;
+				for(int x = 0; x < width; x++)
+				{
+					double accumulator = 0;
+					int accumulatorCount = 0;
+					for(int i = 0; i < kernelSize; i++)
+					{
+						int kernelOffset = i * kernelSize;
+						for(int j = 0; j < kernelSize; j++)
+						{
+							int relXPosition = x + (i - halfKernel);
+							int relYPosition = y + (j - halfKernel);
+							
+							if(relXPosition >= 0 && relXPosition < width && 
+									relYPosition >= 0 && relYPosition < height)
+							{
+								int offset = (relYPosition * width) + relXPosition;
+								
+								accumulator = accumulator + (pixels[offset] * kernel[kernelOffset + j]);
+								accumulatorCount = accumulatorCount + 1;
+							}
+						}
+					}
+					
+					convolvedPixels[pixelOffset + x] = (int) (accumulator / kernelTotal);
+					avgPixelValue = avgPixelValue + (int) (accumulator / kernelTotal);
+				}
+			}
+			
+			avgPixelValue = avgPixelValue / (width * height);
+			
+			return convolvedPixels;
+		}
+		else
+		{
+			throw new RuntimeException("Data in GaussianBlur isn't modulo of 2");
+		}
+	}
+	
+	public static ComplexNumber[] computeFreqDomain(int[] function)
+	{
+		int n = Utility.multipleTwoPreComp(function.length);
+		ComplexNumber[] complexFunction = new ComplexNumber[n];
+		
+		for(int i = 0; i < function.length; i++)
+		{
+			complexFunction[i] = new ComplexNumber(function[i], 0);
+		}
+		
+		// Make the function a power of 2 by adding padding
+		for(int i = function.length; i < n; i++)
+		{
+			complexFunction[i] = new ComplexNumber(0, 0);
+		}
+		
+		return computeFreqDomain(complexFunction);
+	}
+	
+	public static  ComplexNumber[] computeFreqDomain(double[] function)
+	{
+		int n = Utility.multipleTwoPreComp(function.length);
+		
+		ComplexNumber[] complexFunction = new ComplexNumber[n];
+		
+		for(int i = 0; i < function.length; i++)
+		{
+			complexFunction[i] = new ComplexNumber(function[i], 0);
+		}
+		
+		// Make the function a power of 2 by adding padding
+		for(int i = function.length; i < n; i++)
+		{
+			complexFunction[i] = new ComplexNumber(0, 0);
+		}
+		
+		return computeFreqDomain(complexFunction);
+	}
+	
+	/**
+	 * Needs changing to FFT to get time complexity of nlogn instead of n^2
+	 * @return
+	 */
+	public static ComplexNumber[] computeFreqDomain(ComplexNumber[] function)
+	{
+		int n = function.length;
+		
+		if(n == 1)
+		{
+			return function;
+		}
+		
+		ComplexNumber w = new ComplexNumber(1, 0);
+		
+		ComplexNumber[] a0 = new ComplexNumber[(int) Math.floor(n / 2)];
+		ComplexNumber[] a1 = new ComplexNumber[(int) Math.floor(n / 2)];
+		
+		int counter = 0;
+		for(int i = 0; i < n; i = i + 2)
+		{
+			a0[counter] = function[i];
+			a1[counter] = function[i+1];
+			
+			counter++;
+		}
+		
+		ComplexNumber[] y0 = computeFreqDomain(a0);
+		ComplexNumber[] y1 = computeFreqDomain(a1);
+		
+		ComplexNumber[] yi = new ComplexNumber[n];
+		for(int i = 0; i < (n/2); i++)
+		{
+			double u = (-2 * i * Math.PI) / n;
+			
+			double real = Math.cos(u);
+			double img = Math.sin(u);
+			
+			ComplexNumber wn = new ComplexNumber(real, img);
+			
+			yi[i] = y0[i].add(w).mul(y1[i]);
+			yi[i+(n/2)] = y0[i].sub(w).mul(y1[i]);
+			
+			w = w.mul(wn);
+		}
+		
+		return yi;
+	}
+}

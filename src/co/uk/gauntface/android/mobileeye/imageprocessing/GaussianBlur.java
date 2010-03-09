@@ -9,62 +9,155 @@ public class GaussianBlur
 {	
 	private double mSigma;
 	
-	private long[][] mKernel;
+	private double[] mKernel;
+	private int mKernelSize;
+	private double mKernelTotal;
 	
+	private ComplexNumber[] mFourierKernel;
+	
+	/**
+	 * 
+	 * @param sigma		Standard Deviation
+	 */
 	public GaussianBlur(double sigma)
 	{
 		mSigma = sigma;
 		
 		createGaussianKernel();
+		
+		mFourierKernel = IPUtility.computeFreqDomain(mKernel);
 	}
-	
+
+	private ComplexNumber calcFourierComp(int k, int n, int totalN)
+	{
+		double u = (-2 * Math.PI * k * n) / totalN; 
+		
+		double real = Math.cos(u);
+		double img = Math.sin(u);
+		
+		return new ComplexNumber(real, img);
+	}
+
+	/**
+	 * The size of the kernel is 3 * the standard deviation
+	 * TODO: Speed up using symmetry
+	 */
 	private void createGaussianKernel()
 	{
-		// Size is less than 6 x sigma
-		int sizeOfKernel = (int) Math.floor(6 * mSigma);
-		int halfSize = (int) Math.floor((sizeOfKernel/2));
+		mKernelTotal = 0;
 		
-		mKernel = new long[sizeOfKernel][sizeOfKernel];
+		mKernelSize = (int) Math.floor(6 * mSigma);
 		
-		for(int i = 0; i < sizeOfKernel; i++)
+		if((mKernelSize & 0x1) == 0x0)
 		{
-			for(int j = 0; j < sizeOfKernel; j++)
+			mKernelSize = mKernelSize - 1;
+		}
+		
+		mKernel = new double[mKernelSize * mKernelSize];
+		
+		int halfSize = (int) Math.floor((mKernelSize/2));
+		
+		for(int y = 0; y < mKernelSize; y++)
+		{
+			int outputOffset = y * mKernelSize;
+			
+			int yDist = y - halfSize;
+			yDist = Math.abs(yDist);
+			
+			for(int x = 0; x < mKernelSize; x++)
 			{
-				int xDist = i % halfSize;
-				int yDist = j % halfSize;
+				int xDist = x - halfSize;
+				xDist = Math.abs(xDist);
 				
-				mKernel[i][j] = getDistrbutionValue(xDist, yDist);
+				double kernelValue = getDistrbutionValue(xDist, yDist);
+				
+				mKernel[outputOffset + x] = kernelValue;
+				mKernelTotal = mKernelTotal + mKernel[outputOffset + x];
 			}
 		}
-	}
-	
-	private long getDistrbutionValue(int xValue, int yValue)
-	{
-		return (long) ((1 / (2 * Math.PI * (mSigma * mSigma))) * Math.exp(-(((xValue * xValue) + (yValue * yValue)) / (2 * (mSigma * mSigma)))));
-	}
-	
-	public byte[] blurImage(byte[] data, int width, int height)
-	{
-		Log.v(Singleton.TAG, "Data size = " + data.length + " width = " + width + " height = " + height);
 		
-		if((data.length % 2) == 0)
+		Log.v(Singleton.TAG, "Gaussian Blur kernel size = " + mKernelSize+"");
+	}
+	
+	private double getDistrbutionValue(int xValue, int yValue)
+	{
+		// TODO speed up by making this a global variable of this function
+		double constVar = (1 / (2 * Math.PI * (mSigma * mSigma)));
+		
+		double topVar = -((xValue * xValue) + (yValue * yValue));
+		double bottomConstVar = (2 * (mSigma * mSigma));
+		
+		return (constVar * Math.exp(topVar / bottomConstVar));
+	}
+	
+	public int[] blurImage(int[] pixels, int width, int height)
+	{
+		return IPUtility.convolve(pixels, width, height, mKernel, mKernelSize, mKernelTotal);
+		
+		/**if((pixels.length & 0x1) == 0x0)
 		{
+			//Log.v(Singleton.TAG, "FFT Start <!--------------- width = " + width + " height = " + height);
+			//ComplexNumber[] pixelFreqDomain = computeFreqDomain(pixels);
+			//Log.v(Singleton.TAG, "FFT Complete");
+			
+			int avgPixelValue = 0;
+			
+			int halfKernel = (int) Math.floor(mKernelSize / 2);
+			int[] convolvedPixels = new int[pixels.length];
+			
+			for(int y = 0; y < height; y++)
+			{
+				int pixelOffset = y * width;
+				for(int x = 0; x < width; x++)
+				{
+					double accumulator = 0;
+					int accumulatorCount = 0;
+					for(int i = 0; i < mKernelSize; i++)
+					{
+						int kernelOffset = i * mKernelSize;
+						for(int j = 0; j < mKernelSize; j++)
+						{
+							int relXPosition = x + (i - halfKernel);
+							int relYPosition = y + (j - halfKernel);
+							
+							if(relXPosition >= 0 && relXPosition < width && 
+									relYPosition >= 0 && relYPosition < height)
+							{
+								int offset = (relYPosition * width) + relXPosition;
+								//Log.v(Singleton.TAG, "pixel value =  "+pixels[offset] +" Kernerl Value = " + mKernel[kernelOffset + j]);
+								accumulator = accumulator + (pixels[offset] * mKernel[kernelOffset + j]);
+								accumulatorCount = accumulatorCount + 1;
+							}
+						}
+					}
+					
+					convolvedPixels[pixelOffset + x] = (int) (accumulator / mKernelTotal);
+					avgPixelValue = avgPixelValue + (int) (accumulator / mKernelTotal);
+				}
+			}
+			
+			avgPixelValue = avgPixelValue / (width * height);
+			
+			Log.v(Singleton.TAG, "Avg. Pixel Value = " + avgPixelValue);
+			
+			return convolvedPixels;**/
+			
 			//RGB565 rgbPixelValue = new RGB565(new byte[]{data[0], data[1]});
 			
 			// TODO: Optimise this to require one loop and and generate byte[] rather than two loops
-			RGB565[][] pixels = new RGB565[height][width];
+			//RGB565[][] pixels = new RGB565[height][width];
 			
-			for(int i = 0; i < data.length; i = i + 2)
-			{
-				RGB565 rgbPixelValue = new RGB565(new byte[]{data[i], data[i+1]});
-				
-				int col = i % width;
-				int row = (i - col) / width;
-				
-				//Log.v(Singleton.TAG, "Here 0 <-- row = "+row+", col = "+col);
-				
-				pixels[row][col] = rgbPixelValue;
-			}
+			//for(int i = 0; i < data.length; i = i + 2)
+			//{
+			//	RGB565 rgbPixelValue = new RGB565(new byte[]{data[i], data[i+1]});
+			//	
+			//	int col = i % width;
+			//	int row = (i - col) / width;
+			//	
+			//	//Log.v(Singleton.TAG, "Here 0 <-- row = "+row+", col = "+col);
+			//	
+			//	pixels[row][col] = rgbPixelValue;
+			//}
 			
 			/**for(int i = 0; i < data.length; i = (i + 2)*width)
 			{
@@ -80,31 +173,35 @@ public class GaussianBlur
 				}
 			}**/
 			
-			byte[] outputData = new byte[(width * height) * 2];
+			//byte[] outputData = new byte[(width * height) * 2];
+			//
+			//for(int i = 0; i < width; i++)
+			//{
+			//	for(int j = 0; j < height; j++)
+			//	{
+			//		Log.v(Singleton.TAG, "Here 1 <-- i = "+i+", j = "+j);
+			//		byte[] pixelByteValues = pixels[i][j].getBytes(PixelFormat.RGB_565);
+			//		Log.v(Singleton.TAG, "Here 2 <-- i = "+i+", j = "+j);
+			//		
+			//		if(pixelByteValues.length == 2)
+			//		{
+			//			int col = (i * width) + j;
+			//			outputData[col] = pixelByteValues[0];
+			//			outputData[col] = pixelByteValues[1];
+			//		}
+			//	}
+			//}
 			
-			for(int i = 0; i < width; i++)
-			{
-				for(int j = 0; j < height; j++)
-				{
-					Log.v(Singleton.TAG, "Here 1 <-- i = "+i+", j = "+j);
-					byte[] pixelByteValues = pixels[i][j].getBytes(PixelFormat.RGB_565);
-					Log.v(Singleton.TAG, "Here 2 <-- i = "+i+", j = "+j);
-					
-					if(pixelByteValues.length == 2)
-					{
-						int col = (i * width) + j;
-						outputData[col] = pixelByteValues[0];
-						outputData[col] = pixelByteValues[1];
-					}
-				}
-			}
-			
-			return outputData;
-		}
+			//return outputData;
+		/**}
 		else
 		{
-			Log.e(Singleton.TAG, "Data isn't a modulo of 2 which is VERY unexpected");
 			throw new RuntimeException("Data in GaussianBlur isn't modulo of 2");
-		}
+		}**/
+	}
+	
+	public int getKernelSize()
+	{
+		return mKernelSize;
 	}
 }
