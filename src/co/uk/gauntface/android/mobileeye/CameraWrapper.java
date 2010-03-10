@@ -154,4 +154,9 @@ public class CameraWrapper
 		mAutoFocusCallback = new EyeAutoFocusCallback();
 		mCamera.autoFocus(mAutoFocusCallback);
 	}
+
+	public void logHistogram()
+	{
+		mPreviewCallback.logNextHistogram();
+	}
 }

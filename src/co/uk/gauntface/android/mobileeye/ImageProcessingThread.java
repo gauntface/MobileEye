@@ -1,29 +1,40 @@
 package co.uk.gauntface.android.mobileeye;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeDetection;
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.GaussianBlur;
 import co.uk.gauntface.android.mobileeye.imageprocessing.GaussianFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.IPUtility;
+import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegment;
+import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegmentFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.Utility;
 import co.uk.gauntface.android.mobileeye.imageprocessing.YUVPixel;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Bitmap.CompressFormat;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
+import android.text.format.Time;
 import android.util.Log;
 
 public class ImageProcessingThread extends Thread
 {
 	private Size mImageSize;
 	private byte[] mData;
+	private boolean mLogHistogram;
 	
-	public ImageProcessingThread(Size imageSize, byte[] data)
+	public ImageProcessingThread(Size imageSize, byte[] data, boolean logHistogram)
 	{
 		mImageSize = imageSize;
 		mData = data;
+		mLogHistogram = logHistogram;
 	}
 	
 	public void run()
@@ -56,11 +67,42 @@ public class ImageProcessingThread extends Thread
 			}
 		}
 		
-		GaussianBlur gaussianBlur = GaussianFactory.getGaussianBlur();
-		pixels = gaussianBlur.blurImage(pixels, b.getWidth(), b.getHeight());
+		if(mLogHistogram == true)
+		{
+			b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
+			
+			Time time = new Time();
+			String currentTime = time.format2445();
+			
+			String imageName = currentTime+"BW.png";
+			String pathSDCard = Environment.getExternalStorageDirectory().getAbsolutePath();
+			
+			try
+			{
+				File sdCardFile = Environment.getExternalStorageDirectory();
+				File mobileEyeFile = new File(sdCardFile, "MobileEye");
+				
+				File imageFile = new File(mobileEyeFile, imageName);
+				imageFile.mkdirs();
+				
+				FileOutputStream fileStream = new FileOutputStream(imageFile);
+				b.compress(CompressFormat.PNG, 100, fileStream);
+				fileStream.close();
+			}
+			catch(Exception e)
+			{
+				Log.e(Singleton.TAG, "ImageProcessingThread Error - " + e);
+				e.printStackTrace();
+			}
+		}
+		//GaussianBlur gaussianBlur = GaussianFactory.getGaussianBlur();
+		//pixels = gaussianBlur.blurImage(pixels, b.getWidth(), b.getHeight());
 		
-		EdgeDetection edgeDetection = EdgeFactory.getEdgeDetector();
-		pixels = edgeDetection.classifyEdges(pixels, b.getWidth(), b.getHeight());
+		//EdgeDetection edgeDetection = EdgeFactory.getEdgeDetector();
+		//pixels = edgeDetection.classifyEdges(pixels, b.getWidth(), b.getHeight());
+		
+		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
+		pixels = quickSegment.segmentImage(pixels, mLogHistogram);
 		
 		b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
 		//Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height);

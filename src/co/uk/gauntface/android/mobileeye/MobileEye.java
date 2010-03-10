@@ -13,9 +13,12 @@ import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.SurfaceHolder.Callback;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.ImageView;
 
 public class MobileEye extends Activity implements Callback
@@ -35,6 +38,7 @@ public class MobileEye extends Activity implements Callback
 	private CameraWrapper mCamera;
 	private SurfaceHolder mSurfaceHolder;
 	private Handler mHandler;
+	private Button mOutputHistogramBtn;
 	
     /** Called when the activity is first created. */
     @Override
@@ -171,6 +175,16 @@ public class MobileEye extends Activity implements Callback
         {
             // ignore
         }
+        
+        mOutputHistogramBtn = (Button) findViewById(R.id.OutputHistogramBtn);
+        mOutputHistogramBtn.setOnClickListener(new OnClickListener(){
+
+			public void onClick(View view)
+			{
+				mCamera.logHistogram();
+			}
+        	
+        });
     }
     
     

@@ -21,7 +21,14 @@ public class Utility
 				
 				for (int x = 0; x < width; x++)
 				{
-					image[outputOffset + x] = 0xff000000 | (pixels[inputOffset + x] * 0x00010101);
+					if(pixels[inputOffset + x] > 0)
+					{
+						image[outputOffset + x] = 0xcc000000 | (pixels[inputOffset + x] * 0x00010101);
+					}
+					else
+					{
+						image[outputOffset + x] = 0x00000000;
+					}
 				}
 				
 				inputOffset = inputOffset + width;

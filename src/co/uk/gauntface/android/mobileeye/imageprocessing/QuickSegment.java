@@ -8,38 +8,89 @@ import co.uk.gauntface.android.mobileeye.Singleton;
 
 public class QuickSegment
 {
-	private int MAX_PIXEL_VALUE = 255;
+	private int MAX_PIXEL_VALUE = 256;
 	private int HISTOGRAM_SPACING = 10;
+	private int BUCKET_THRESHOLD = 10;
 	
-	private int GROUP_0_COLOR = 0;
-	private int GROUP_1_COLOR = 150;
-	private int GROUP_2_COLOR = 255;
+	private int GROUPING_VARIATION = 40;
+	
+	private int GROUP_NO_COLOR = -1;
+	private int GROUP_0_COLOR = 255;
+	private int GROUP_1_COLOR = 120;
+	private int GROUP_2_COLOR = 60;
 	
 	public QuickSegment()
 	{
 		
 	}
 	
-	public int[] segmentImage(int[] pixels)
+	public int[] segmentImage(int[] pixels, boolean logHistogram)
 	{
 		int[] pixelBucket = new int[MAX_PIXEL_VALUE];
 		
 		// Bucket Sort the Pixels [Histogram Essentially]
+		int maxIndex = 0;
+		
 		for(int i = 0; i < pixels.length; i++)
 		{
-			pixelBucket[pixels[i]]++;
+			pixelBucket[pixels[i]] = pixelBucket[pixels[i]] + 1;
+			
+			if(pixelBucket[pixels[i]] > pixelBucket[maxIndex])
+			{
+				maxIndex = pixels[i];
+			}
 		}
 		
-		int[] groups = hillClimb(pixelBucket);
+		if(logHistogram == true)
+		{
+			for(int i = 0; i < pixelBucket.length; i++)
+			{
+				//Log.v(Singleton.TAG, "HistogramLog: " + i + " - " + pixelBucket[i]);
+			}
+		}
 		
-		return null;
+		int[] groups = hillClimb(pixelBucket, maxIndex);
+		
+		int[] newPixels = new int[pixels.length];
+		
+		for(int i = 0; i < pixels.length; i++)
+		{
+			for(int j = 0; j < groups.length; j++)
+			{
+				if(pixels[i] >= (groups[j] - GROUPING_VARIATION) && pixels[i] <= (groups[j] + GROUPING_VARIATION))
+				{
+					if(j == 0)
+					{
+						newPixels[i] = GROUP_0_COLOR;
+						break;
+					}
+					else if(j == 1)
+					{
+						newPixels[i] = GROUP_1_COLOR;
+						break;
+					}
+					else if(j == 2)
+					{
+						newPixels[i] = GROUP_2_COLOR;
+						break;
+					}
+				}
+				else if((j+1) == groups.length)
+				{
+					newPixels[i] = GROUP_NO_COLOR;
+					break;
+				}
+			}
+		}
+		
+		return newPixels;
 	}
 	
-	public int[] hillClimb(int[] pixelBucket)
+	private int[] hillClimb(int[] pixelBucket, int maxIndex)
 	{
 		ArrayList<Integer> maxPoints = new ArrayList<Integer>();
 		
-		int[] hillStartPoints = new int[]{0, 50, 100, 150, 200, 250};
+		int[] hillStartPoints = new int[]{0, 50, 100, 150, 200, 250, maxIndex};
 		
 		for(int i = 0; i < hillStartPoints.length; i++)
 		{
@@ -47,17 +98,20 @@ public class QuickSegment
 			boolean maximumFound = false;
 			while(maximumFound == false)
 			{
-				if(pixelBucket[currentPoint + 1] > pixelBucket[currentPoint])
+				if((currentPoint + 1) < MAX_PIXEL_VALUE && pixelBucket[currentPoint + 1] > pixelBucket[currentPoint])
 				{
 					currentPoint = currentPoint + 1;
 				}
-				else if(pixelBucket[currentPoint - 1] > pixelBucket[currentPoint])
+				else if((currentPoint - 1) >= 0 && pixelBucket[currentPoint - 1] > pixelBucket[currentPoint])
 				{
 					currentPoint = currentPoint - 1;
 				}
 				else
 				{
-					maxPoints.add(currentPoint);
+					if(pixelBucket[currentPoint] > BUCKET_THRESHOLD)
+					{
+						maxPoints.add(currentPoint);
+					}
 					maximumFound = true;
 				}
 			}
@@ -94,18 +148,7 @@ public class QuickSegment
 					group3 = maxPoint;
 				}
 			}
-			else
-			{
-				Log.v(Singleton.TAG, "Skipping Peak - " + maxPoint);
-				Log.v(Singleton.TAG, "Group1 = " + group1);
-				Log.v(Singleton.TAG, "Group2 = " + group2);
-				Log.v(Singleton.TAG, "Group3 = " + group3);
-			}
 		}
-		
-		Log.v(Singleton.TAG, "Final Group1 = " + group1);
-		Log.v(Singleton.TAG, "Final Group2 = " + group2);
-		Log.v(Singleton.TAG, "Final Group3 = " + group3);
 		
 		if(group1 == -1)
 		{
