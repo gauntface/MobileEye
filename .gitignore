@@ -1,2 +1,3 @@
 # Ignore the bin directory, all it's subdirectories and all it's files
 bin/**/*
+bin/*

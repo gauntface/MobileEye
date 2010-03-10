@@ -3,6 +3,7 @@ package co.uk.gauntface.android.mobileeye;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeDetection;
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeFactory;
@@ -69,31 +70,15 @@ public class ImageProcessingThread extends Thread
 		
 		if(mLogHistogram == true)
 		{
+			Time time = new Time();
+			time.setToNow();
+			String currentTime = time.format("%Y%m%d%H%M%S");
+			
+			Utility.setFilePrePend(currentTime);
+			
 			b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
 			
-			Time time = new Time();
-			String currentTime = time.format2445();
-			
-			String imageName = currentTime+"BW.png";
-			String pathSDCard = Environment.getExternalStorageDirectory().getAbsolutePath();
-			
-			try
-			{
-				File sdCardFile = Environment.getExternalStorageDirectory();
-				File mobileEyeFile = new File(sdCardFile, "MobileEye");
-				
-				File imageFile = new File(mobileEyeFile, imageName);
-				imageFile.mkdirs();
-				
-				FileOutputStream fileStream = new FileOutputStream(imageFile);
-				b.compress(CompressFormat.PNG, 100, fileStream);
-				fileStream.close();
-			}
-			catch(Exception e)
-			{
-				Log.e(Singleton.TAG, "ImageProcessingThread Error - " + e);
-				e.printStackTrace();
-			}
+			Utility.saveImageToSDCard(b, "BW.png");
 		}
 		//GaussianBlur gaussianBlur = GaussianFactory.getGaussianBlur();
 		//pixels = gaussianBlur.blurImage(pixels, b.getWidth(), b.getHeight());
@@ -105,6 +90,12 @@ public class ImageProcessingThread extends Thread
 		pixels = quickSegment.segmentImage(pixels, mLogHistogram);
 		
 		b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
+		
+		if(mLogHistogram == true)
+		{
+			Utility.saveImageToSDCard(b, "Segment.png");
+		}
+		
 		//Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height);
 		
 		Singleton.updateImageView = b;

@@ -43,10 +43,15 @@ public class QuickSegment
 		
 		if(logHistogram == true)
 		{
+			String histogramOuput = new String();;
+			
 			for(int i = 0; i < pixelBucket.length; i++)
 			{
+				histogramOuput = histogramOuput + i +","+pixelBucket[i]+"\n";
 				//Log.v(Singleton.TAG, "HistogramLog: " + i + " - " + pixelBucket[i]);
 			}
+			
+			Utility.saveTextToSDCard(histogramOuput, "hist.txt");
 		}
 		
 		int[] groups = hillClimb(pixelBucket, maxIndex);

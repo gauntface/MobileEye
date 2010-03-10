@@ -1,12 +1,23 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+
+import co.uk.gauntface.android.mobileeye.Singleton;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.graphics.Bitmap.CompressFormat;
+import android.os.Environment;
+import android.util.Log;
 
 public class Utility
 {
+	private static String mPrependFileName;
+	
 	public static Bitmap renderBitmap(int[] pixels, int width, int height, boolean isGreyScale)
 	{
 		Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -65,5 +76,84 @@ public class Utility
 		}
 		
 		return requiredN;
+	}
+	
+	public static boolean saveImageToSDCard(Bitmap b, String appendFileName)
+	{
+		try
+		{
+			File sdCardFile = Environment.getExternalStorageDirectory();
+			if(sdCardFile.canWrite() == true)
+			{
+				File mobileEyeFile = new File(sdCardFile, "MobileEye");
+				mobileEyeFile.mkdirs();
+				
+				File imageFile = new File(mobileEyeFile, mPrependFileName+appendFileName);
+				
+				FileOutputStream fileStream = new FileOutputStream(imageFile);
+				b.compress(CompressFormat.PNG, 100, fileStream);
+				
+				fileStream.close();
+			}
+			else
+			{
+				Log.e(Singleton.TAG, "Cannot write to SD Card");
+			}
+			
+			return true;
+		}
+		catch(Exception e)
+		{
+			Log.e(Singleton.TAG, "Utility Error - " + e);
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+
+	public static void setFilePrePend(String fileName)
+	{
+		Log.v(Singleton.TAG, "Settings the prepended filename to: " + fileName);
+		mPrependFileName = fileName;
+	}
+
+	public static boolean saveTextToSDCard(String content, String appendFileName)
+	{
+		try
+		{
+			File sdCardFile = Environment.getExternalStorageDirectory();
+			if(sdCardFile.canWrite() == true)
+			{
+				File mobileEyeFile = new File(sdCardFile, "MobileEye");
+				mobileEyeFile.mkdirs();
+				
+				File textFile = new File(mobileEyeFile, mPrependFileName+appendFileName);
+				
+				FileWriter fileWriter = new FileWriter(textFile);
+				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+				
+				try
+				{
+					bufferedWriter.write(content);
+				}
+				finally
+				{
+					bufferedWriter.close();
+				}
+			}
+			else
+			{
+				Log.e(Singleton.TAG, "Cannot write to SD Card");
+			}
+			
+			return true;
+		}
+		catch(Exception e)
+		{
+			Log.e(Singleton.TAG, "Utility Error - " + e);
+			e.printStackTrace();
+		}
+		
+		return false;
 	}
 }
