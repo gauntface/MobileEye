@@ -2,4 +2,5 @@
 <resources>
     
     <string name="app_name">Mobile Eye</string>
+<string name="output_histogram_data">Output Histogram</string>
 </resources>
