@@ -32,9 +32,9 @@ public class Utility
 				
 				for (int x = 0; x < width; x++)
 				{
-					if(pixels[inputOffset + x] > 0)
+					if(pixels[inputOffset + x] >= 0)
 					{
-						image[outputOffset + x] = 0xcc000000 | (pixels[inputOffset + x] * 0x00010101);
+						image[outputOffset + x] = 0xff000000 | (pixels[inputOffset + x] * 0x00010101);
 					}
 					else
 					{
