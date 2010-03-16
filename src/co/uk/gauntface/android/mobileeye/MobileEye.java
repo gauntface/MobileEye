@@ -1,6 +1,9 @@
 package co.uk.gauntface.android.mobileeye;
 
+import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
+import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothEstablishConnection;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -32,6 +35,9 @@ public class MobileEye extends Activity implements Callback
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
 	
+	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
+	public static final int BLUETOOTH_STREAMS_INIT = 3;
+	
 	private SurfaceView mSurfaceView;
 	private ImageView mImageProcessedSurfaceView;
 	private boolean mStartPreviewFail;
@@ -46,6 +52,8 @@ public class MobileEye extends Activity implements Callback
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera);
+        
+        initBluetooth();
         
         initActivity();
     }
@@ -89,6 +97,20 @@ public class MobileEye extends Activity implements Callback
         mCamera.closeCamera();
 
         super.onPause();
+    }
+    
+    private void initBluetooth()
+    {
+    	BluetoothConnectionThread b = Singleton.getBluetoothConnection();
+    	
+    	if(b == null)
+    	{
+    		//Connection hasn't been made
+    		Intent intent = new Intent(getApplicationContext(), BluetoothEstablishConnection.class);
+    		startActivity(intent);
+    		
+    		finish();
+    	}
     }
     
     private void initActivity()
