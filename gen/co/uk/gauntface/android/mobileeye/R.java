@@ -14,6 +14,8 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
+        public static final int BluetoothConnectBtn=0x7f050005;
+        public static final int BluetoothDeviceListView=0x7f050004;
         public static final int CameraSurfaceView=0x7f050000;
         public static final int ImageProcessedSurfaceView=0x7f050001;
         public static final int LinearLayout01=0x7f050002;
@@ -21,6 +23,7 @@ public final class R {
     }
     public static final class layout {
         public static final int camera=0x7f030000;
+        public static final int establish_bluetooth_connection=0x7f030001;
     }
     public static final class string {
         public static final int app_name=0x7f040000;

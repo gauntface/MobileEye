@@ -37,7 +37,7 @@ public class BluetoothConnectionThread extends Thread
 		catch (IOException e)
 		{
 			Message msg = Message.obtain();
-			msg.arg1 = BluetoothEstablishConnection.BLUETOOTH_CONNECT_FAILED;
+			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 0;
 			mHandler.sendMessage(msg);
 			
@@ -63,7 +63,7 @@ public class BluetoothConnectionThread extends Thread
         catch (IOException connectException)
         {
         	Message msg = Message.obtain();
-			msg.arg1 = BluetoothEstablishConnection.BLUETOOTH_CONNECT_FAILED;
+			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 1;
 			mHandler.sendMessage(msg);
 			
@@ -75,7 +75,7 @@ public class BluetoothConnectionThread extends Thread
             catch (IOException closeException)
             {
             	Message msg2 = Message.obtain();
-    			msg.arg1 = BluetoothEstablishConnection.BLUETOOTH_CONNECT_FAILED;
+    			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
     			msg.arg2 = 2;
     			mHandler.sendMessage(msg2);
     			
@@ -85,7 +85,7 @@ public class BluetoothConnectionThread extends Thread
         }
         
         Message msg = Message.obtain();
-        msg.arg1 = BluetoothEstablishConnection.BLUETOOTH_CONNECT_SUCCESSFUL;
+        msg.arg1 = MobileEye.BLUETOOTH_CONNECT_SUCCESSFUL;
         mHandler.sendMessage(msg);
         
         // Do work to manage the connection (in a separate thread)
@@ -155,7 +155,7 @@ public class BluetoothConnectionThread extends Thread
         catch (IOException e)
         {
         	Message msg = Message.obtain();
-			msg.arg1 = BluetoothEstablishConnection.BLUETOOTH_CONNECT_FAILED;
+			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 3;
 			mHandler.sendMessage(msg);
         }

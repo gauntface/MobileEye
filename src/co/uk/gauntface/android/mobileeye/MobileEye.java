@@ -1,115 +1,138 @@
 package co.uk.gauntface.android.mobileeye;
 
+import java.util.ArrayList;
+
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
-import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothEstablishConnection;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemLongClickListener;
 
-public class MobileEye extends Activity implements Callback
+public class MobileEye extends Activity
 {
-	/**
-	 * Handler arg1 Values
-	 */
-	public static final int START_AUTO_FOCUS = 0;
-	public static final int DRAW_IMAGE_PROCESSING = 1;
+	private BluetoothAdapter mBluetoothAdapter;
+	private ListView mListView;
+	private ArrayAdapter mArrayAdapter;
+	private ArrayList<BluetoothDevice> mBluetoothDevices;
+	private Handler mHandler;
+	private BluetoothConnectionThread mConnectThread;
 	
-	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
-	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
-	
-	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
+	private static int REQUEST_ENABLE_BT = 0;
+	public static final int BLUETOOTH_CONNECT_FAILED = 0;
+	public static final int BLUETOOTH_CONNECT_SUCCESSFUL = 1;
 	public static final int BLUETOOTH_STREAMS_INIT = 3;
 	
-	private SurfaceView mSurfaceView;
-	private ImageView mImageProcessedSurfaceView;
-	private boolean mStartPreviewFail;
-	private CameraWrapper mCamera;
-	private SurfaceHolder mSurfaceHolder;
-	private Handler mHandler;
-	private Button mOutputHistogramBtn;
+	// Initialised here as we need to maintain this receiver through
+	// the Activity lifecycle
+	private final BroadcastReceiver mReceiver = new BroadcastReceiver()
+	{
+	    public void onReceive(Context context, Intent intent)
+	    {
+	        String action = intent.getAction();
+	        
+	        if (BluetoothDevice.ACTION_FOUND.equals(action))
+	        {
+	            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+	            
+	            Log.v("mobileeye", "Name: "+device.getName() + " Address: " + device.getAddress());
+	            
+	            mArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+	            mBluetoothDevices.add(device);
+	            mListView.invalidateViews();
+	        }
+	    }
+	};
 	
-    /** Called when the activity is first created. */
+	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.camera);
-        
-        initBluetooth();
+        setContentView(R.layout.establish_bluetooth_connection);
         
         initActivity();
+        executeActivity();
     }
     
     @Override
     public void onStart()
     {
     	super.onStart();
-    	
-    	Log.v(Singleton.TAG, "MobileEye - onStart");
     }
     
     @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
-
-        Log.v(Singleton.TAG, "MobileEye - onResume");
-        
-        // Start the preview if it is not started.
-        if ((mCamera.isPreviewing() == false) && (mStartPreviewFail == false)) {
-            try
-            {
-                mCamera.startPreview(mSurfaceHolder);
-            }
-            catch(CameraHardwareException e)
-            {
-                // Show Error and finish
-                return;
-            }
-        }
     }
     
     @Override
     protected void onPause()
     {
-    	Log.v(Singleton.TAG, "MobileEye - onPause");
-    	
-        mCamera.stopPreview();
-        
-        // Close the camera now because other activities may need to use it.
-        mCamera.closeCamera();
-
         super.onPause();
+        
     }
     
-    private void initBluetooth()
+    protected void onStop()
     {
-    	BluetoothConnectionThread b = Singleton.getBluetoothConnection();
+    	super.onStop();
     	
-    	if(b == null)
+    	try
     	{
-    		//Connection hasn't been made
-    		Intent intent = new Intent(getApplicationContext(), BluetoothEstablishConnection.class);
-    		startActivity(intent);
+    		unregisterReceiver(mReceiver);
+    	}
+    	catch(Exception e)
+    	{
     		
-    		finish();
+    	}
+    }
+
+    protected void onDestroy()
+    {
+    	super.onDestroy();
+    	
+    	try
+    	{
+    		unregisterReceiver(mReceiver);
+    	}
+    	catch(Exception e)
+    	{
+    		
+    	}
+    }
+    
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+    	if(requestCode == REQUEST_ENABLE_BT)
+    	{
+    		// Handle the result from requesting to have Bluetooth switched on
+    		if(resultCode == Activity.RESULT_OK)
+    		{
+    			beginScanning();
+    		}
+    		else
+    		{
+    			Toast t = Toast.makeText(getApplicationContext(),
+						"Failed to turn on Bluetooth",
+						Toast.LENGTH_LONG);
+				
+				t.show();
+    		}
     	}
     }
     
@@ -119,137 +142,128 @@ public class MobileEye extends Activity implements Callback
     		
     		public void handleMessage(Message msg)
     		{
-    			if(msg.arg1 == START_AUTO_FOCUS)
+    			if(msg.arg1 == BLUETOOTH_CONNECT_FAILED)
     			{
-    				// Was prev auto_focus successful
-    				if(msg.arg2 == AUTO_FOCUS_SUCCESSFUL)
-    				{
-    					// Previous auto focus successful
-    				}
-    				else
-    				{
-    					// Previous auto focus unsuccessful
-    				}
+    				Toast t = Toast.makeText(getApplicationContext(),
+    						"Bluetooth Connection Failed: " + msg.arg2,
+    						Toast.LENGTH_LONG);
     				
-    				// Start Auto Focus
-    				if(mCamera.isNull() == false && mCamera.isPreviewing() == true)
-    				{
-    					//mCamera.startAutoFocus();
-    				}
+    				t.show();
     			}
-    			else if(msg.arg1 == DRAW_IMAGE_PROCESSING)
+    			else if(msg.arg1 == BLUETOOTH_CONNECT_SUCCESSFUL)
     			{
-    				mHandler.post(new Runnable(){
-
-						public void run()
-						{
-							mImageProcessedSurfaceView.setImageBitmap(Singleton.updateImageView);
-						}
-    					
-    				});
+    				Toast t = Toast.makeText(getApplicationContext(),
+    						"Bluetooth Connection Successful",
+    						Toast.LENGTH_LONG);
+    				
+    				t.show();
+    			}
+    			else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
+    			{
+    				Singleton.setBluetoothConnection(mConnectThread);
+    				
+    				Toast t = Toast.makeText(getApplicationContext(),
+    						"Start Camera Activity",
+    						Toast.LENGTH_LONG);
+    				
+    				t.show();
+    				
+    				Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
+    				startActivity(intent);
+    				finish();
+    				
+    				//String s = new String("Travelling through the air");
+    				//mConnectThread.write(s.getBytes());
+    				//Log.v("mobileeye", "Sending data");
     			}
     		}
     		
     	};
-    	mCamera = new CameraWrapper(mHandler);
-    	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
     	
-    	mImageProcessedSurfaceView = (ImageView) findViewById(R.id.ImageProcessedSurfaceView);
+    	IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+    	registerReceiver(mReceiver, filter);
     	
-    	/*
-         * To reduce startup time, we start the preview in another thread.
-         * We make sure the preview is started at the end of onCreate.
-         */
-        Thread startPreviewThread = new Thread(new Runnable() {
-            public void run()
-            {
-                try
-                {
-                    mStartPreviewFail = false;
-                    mCamera.startPreview(mSurfaceHolder);
-                }
-                catch (CameraHardwareException e)
-                {
-                    mStartPreviewFail = true;
-                }
-            }
-        });
-        startPreviewThread.start();
-        
-        SurfaceHolder surfaceHolder = mSurfaceView.getHolder();
-        surfaceHolder.addCallback(this);
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    	
-    	// Make sure preview is started.
-        try
-        {
-            startPreviewThread.join();
-            
-            if (mStartPreviewFail == true)
-            {
-                //showCameraErrorAndFinish();
-            	Log.e(Singleton.TAG, "ERROR: Start Preview of the camera failed");
-            	finish();
-                return;
-            }
-        }
-        catch (InterruptedException ex)
-        {
-            // ignore
-        }
-        
-        mOutputHistogramBtn = (Button) findViewById(R.id.OutputHistogramBtn);
-        mOutputHistogramBtn.setOnClickListener(new OnClickListener(){
+    	Button bluetoothConnect = (Button) findViewById(R.id.BluetoothConnectBtn);
+    	bluetoothConnect.setOnClickListener(new OnClickListener(){
 
-			public void onClick(View view)
+			public void onClick(View v)
 			{
-				mCamera.logHistogram();
+				if(mBluetoothAdapter != null)
+				{
+					mArrayAdapter.clear();
+					mBluetoothDevices.clear();
+					
+					if(mBluetoothAdapter.isEnabled() == true)
+					{
+						beginScanning();
+					}
+					else
+					{
+						Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+		    		    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+					}
+				}
 			}
-        	
-        });
+    		
+    	});
+    	
+    	mArrayAdapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1);
+    	mBluetoothDevices = new ArrayList<BluetoothDevice>();
+    	
+    	mListView = (ListView) findViewById(R.id.BluetoothDeviceListView);
+    	mListView.setAdapter(mArrayAdapter);
+    	
+    	mListView.setOnItemLongClickListener(new OnItemLongClickListener(){
+
+			public boolean onItemLongClick(AdapterView<?> parent, View view,
+					int position, long id)
+			{
+				BluetoothDevice device = mBluetoothDevices.get(position);
+				
+				mBluetoothAdapter.cancelDiscovery();
+				
+				mConnectThread = new BluetoothConnectionThread(device, mHandler);
+				mConnectThread.start();
+				
+				return true;
+			}
+    		
+    	});
     }
     
+    public void executeActivity()
+    {
+    	mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    	
+    	if (mBluetoothAdapter != null)
+    	{
+    		if (mBluetoothAdapter.isEnabled() == true)
+    		{
+    			beginScanning();
+    		}
+    		else
+    		{
+    			Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+    		    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+    		}
+    	}
+    	else
+    	{
+    		Toast t = Toast.makeText(getApplicationContext(),
+					"This device doesn't support Bluetooth",
+					Toast.LENGTH_LONG);
+			
+			t.show();
+    	}
+    }
     
-    /**
-     * The SurfaceView Callback methods
-     */
-	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h)
-	{
-		Log.v(Singleton.TAG, "MobileEye - surfaceChanged");
-		
-		if(mCamera.isNull() == true)
-		{
-			// TODO: Return Error
-			return;
-		}
-		
-		// Make sure we have a surface in the holder before proceeding.
-        if (holder.getSurface() == null)
-        {
-            Log.d(Singleton.TAG, "Camera surfaceChanged holder.getSurface() == null");
-            return;
-        }
-        
-		mSurfaceHolder = holder;
-		
-		if(holder.isCreating() == true)
-		{
-			mCamera.setPreviewDisplay(mSurfaceHolder);
-		}
-		
-		mCamera.startAutoFocus();
-	}
-
-	public void surfaceCreated(SurfaceHolder holder)
-	{
-		
-	}
-
-	public void surfaceDestroyed(SurfaceHolder holder)
-	{
-		Log.v(Singleton.TAG, "MobileEye - surfaceDestroyed");
-		
-		mCamera.stopPreview();
-        mSurfaceHolder = null;
-	}
+    private void beginScanning()
+    {	
+    	boolean discoverySuccess = mBluetoothAdapter.startDiscovery();
+    	
+    	if(discoverySuccess == false)
+    	{
+    		Log.e("mobileeye", "Error occured when attempting to discover bluetooth devices");
+    	}
+    }
 }

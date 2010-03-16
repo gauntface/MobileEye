@@ -99,7 +99,8 @@ public class ImageProcessingThread extends Thread
 		Singleton.updateImageView = b;
 		
 		Message msg = CameraWrapper.mHandler.obtainMessage();
-		msg.arg1 = MobileEye.DRAW_IMAGE_PROCESSING;
+		// TODO: Fix
+		//msg.arg1 = MobileEye.DRAW_IMAGE_PROCESSING;
 		
 		Bundle data = new Bundle();
 		
