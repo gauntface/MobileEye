@@ -235,4 +235,36 @@ public class IPUtility
 		
 		return yi;
 	}
+	
+	public static int[][] convert1DArrayTo2DArray(int[] array, int width, int height)
+	{
+		int[][] pixelMatrix = new int[height][width];
+		
+		for(int i = 0; i < height; i++)
+		{
+			int heightOffset = i * width;
+			for(int j = 0; j < width; j++)
+			{
+				pixelMatrix[i][j] = array[heightOffset+j];
+			}
+		}
+		
+		return pixelMatrix;
+	}
+
+	public static int[] convert2DArrayTo1DArray(int[][] array, int width, int height)
+	{
+		int[] pixels = new int[width * height];
+		
+		for(int i = 0; i < height; i++)
+		{
+			int heightOffset = i * width;
+			for(int j = 0; j < width; j++)
+			{
+				pixels[heightOffset + j] = array[i][j];
+			}
+		}
+		
+		return pixels;
+	}
 }

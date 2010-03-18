@@ -85,7 +85,6 @@ public class MobileEye extends Activity
     protected void onPause()
     {
         super.onPause();
-        
     }
     
     protected void onStop()

@@ -3,6 +3,7 @@ package co.uk.gauntface.android.mobileeye.imageprocessing;
 import java.util.ArrayList;
 
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import co.uk.gauntface.android.mobileeye.Singleton;
 
@@ -31,7 +32,7 @@ public class QuickSegment
 		
 	}
 	
-	public int[] segmentImage(int[] pixels, boolean logHistogram)
+	public ImagePackage segmentImage(int[] pixels, boolean logHistogram, int imgWidth, int imgHeight)
 	{
 		int[] pixelBucket = new int[(int) Math.floor((MAX_PIXEL_VALUE + 1) / BUCKET_RANGE)];
 		
@@ -116,7 +117,7 @@ public class QuickSegment
 		int[] groups = hillClimb(pixelBucket, maxIndex);
 		
 		ArrayList<Pair> groupValues = new ArrayList<Pair>();
-		for(int i = (groups.length - 1); i >= 0; i--)
+		for(int i = 0; i < groups.length; i++)
 		{
 			// TODO Make this span more of the histogram lowest 1, next one up 2, third one third
 			int minGroupValue = groups[i];
@@ -208,6 +209,18 @@ public class QuickSegment
 		}
 		
 		int[] newPixels = new int[pixels.length];
+		
+		int avgGroup0x = 0;
+		int avgGroup0y = 0;
+		int avgGroup1x = 0;
+		int avgGroup1y = 0;
+		int avgGroup2x = 0;
+		int avgGroup2y = 0;
+		
+		int group0Count = 0;
+		int group1Count = 0;
+		int group2Count = 0;
+		
 		for(int i = 0; i < pixels.length; i++)
 		{
 			for(int j = 0; j < groupValues.size(); j++)
@@ -217,20 +230,31 @@ public class QuickSegment
 				//{
 				if(pixels[i] >= ((Number)groupValue.getArg1()).intValue() && pixels[i] < ((Number)groupValue.getArg2()).intValue())
 				{
-					// The order is reversed to give GROUP_0_COLOR Prominence
+					int xCoord = i % imgWidth;
+					int yCoord = (i - xCoord) / imgWidth;
+					
 					if(j == 0)
 					{
 						newPixels[i] = GROUP_0_COLOR;
+						avgGroup0x = avgGroup0x + xCoord;
+						avgGroup0y = avgGroup0y + yCoord;
+						group0Count = group0Count + 1;
 						break;
 					}
 					else if(j == 1)
 					{
 						newPixels[i] = GROUP_1_COLOR;
+						avgGroup1x = avgGroup1x + xCoord;
+						avgGroup1y = avgGroup1y + yCoord;
+						group1Count = group1Count + 1;
 						break;
 					}
 					else if(j == 2)
 					{
 						newPixels[i] = GROUP_2_COLOR;
+						avgGroup2x = avgGroup2x + xCoord;
+						avgGroup2y = avgGroup2y + yCoord;
+						group2Count = group2Count + 1;
 						break;
 					}
 				}
@@ -242,64 +266,39 @@ public class QuickSegment
 			}
 		}
 		
+		ArrayList<Pair> groupCenters = new ArrayList<Pair>();
 		
-		/**
-		 * 
-		 * OLD CODE - 11 March 2010
-		 * 
-		 */
-		//int[] pixelBucket = new int[(MAX_PIXEL_VALUE+1)];
+		if(group0Count > 0)
+		{
+			int xCoord = avgGroup0x / group0Count;
+			int yCoord = avgGroup0y / group0Count;
+			groupCenters.add(new Pair(xCoord, yCoord));
+		}
+		if(group1Count > 0)
+		{
+			int xCoord = avgGroup1x / group1Count;
+			int yCoord = avgGroup1y / group1Count;
+			groupCenters.add(new Pair(xCoord, yCoord));
+		}
+		if(group2Count > 0)
+		{
+			int xCoord = avgGroup2x / group2Count;
+			int yCoord = avgGroup2y / group2Count;
+			groupCenters.add(new Pair(xCoord, yCoord));
+		}
 		
-		// Bucket Sort the Pixels [Histogram Essentially]
-		//for(int i = 0; i < pixels.length; i++)
-		//{
-		//	pixelBucket[pixels[i]] = pixelBucket[pixels[i]] + 1;
-		//}
+		ImagePackage imgPacket = new ImagePackage(newPixels, imgWidth, imgHeight, groupValues, groupCenters);
 		
-		/**
-		 * Average and Reduce the data
-		 */
-		//int[] reducedPixelBucket = new int[(int)Math.floor(pixelBucket.length / REDUCE_AVG_WINDOW_HALF)];
-		//int counter = 0;
-		//int maxIndex = 0;
-		//for(int i = REDUCE_AVG_WINDOW_HALF; i < MAX_PIXEL_VALUE; i = i + REDUCE_AVG_WINDOW_HALF)
-		//{
-//			double cumulativeValue = 0;
-			//for(int j = i-REDUCE_AVG_WINDOW_HALF; j < i+REDUCE_AVG_WINDOW_HALF; j++)
-			//{
-//				if(j >= 0 && j < pixelBucket.length)
-				//{
-//					cumulativeValue = cumulativeValue + pixelBucket[j];
-				//}
-				//else
-				//{
-//					throw new RuntimeException("QuickSegment shouldn't be reaching out of bounds of pixel bucket");
-				//}
-			//}
-			//cumulativeValue = cumulativeValue / (REDUCE_AVG_WINDOW_HALF * 2);
-			//reducedPixelBucket[counter] = (int) cumulativeValue;
-			
-			//if(cumulativeValue > maxIndex)
-			//{
-				//maxIndex = counter;
-			//}
-			
-			//counter = counter + 1;
-		//}
-		
-		//Pair[] groupValues = new Pair[groups.length];
-		//for(int i = (groups.length - 1); i > 0; i--)
-		//{
-			// TODO Make this span more of the histogram lowest 1, next one up 2, third one third
-			//int minGroupValue = (groups[i] - 1) * REDUCE_AVG_WINDOW_HALF;
-			//int maxGroupValue = ((groups[i] + 1) * REDUCE_AVG_WINDOW_HALF) + (2 * REDUCE_AVG_WINDOW_HALF);
-			
-			//groupValues[i] = new Pair(minGroupValue, maxGroupValue);
-		//}
-		
-		return newPixels;
+		return imgPacket;
 	}
 	
+	/**
+	 * Group 0 == The Max pixel value
+	 * 
+	 * @param data
+	 * @param maxIndex
+	 * @return
+	 */
 	private int[] hillClimb(int[] data, int maxIndex)
 	{
 		ArrayList<Integer> maxPoints = new ArrayList<Integer>();
@@ -317,18 +316,10 @@ public class QuickSegment
 				{
 					currentPoint = currentPoint + 1;
 				}
-				/**else if((currentPoint + 2) < data.length && data[currentPoint + 2] > data[currentPoint])
-				{
-					currentPoint = currentPoint + 2;
-				}**/
 				else if((currentPoint - 1) >= 0 && data[currentPoint - 1] > data[currentPoint])
 				{
 					currentPoint = currentPoint - 1;
 				}
-				/**else if((currentPoint - 2) >= 0 && data[currentPoint - 2] > data[currentPoint])
-				{
-					currentPoint = currentPoint - 2;
-				}**/
 				else
 				{
 					// Make sure small values don't get considered as a group
@@ -379,11 +370,47 @@ public class QuickSegment
 		}
 		else if(group3 == -1)
 		{
-			return new int[]{group1, group2};
+			if(group1 > group2)
+			{
+				return new int[]{group1, group2};
+			}
+			else
+			{
+				return new int[]{group2, group1};
+			}
 		}
 		else
 		{
-			return new int[]{group1, group2, group3};
+			if(group1 > group2)
+			{
+				if(group2 > group3)
+				{
+					return new int[]{group1, group2, group3};
+				}
+				else if(group1 > group3)
+				{
+					return new int[]{group1, group3, group2};
+				}
+				else
+				{
+					return new int[]{group3, group1, group2}; 
+				}
+			}
+			else
+			{
+				if(group1 > group3)
+				{
+					return new int[]{group2, group1, group3};
+				}
+				else if(group2 > group3)
+				{
+					return new int[]{group2, group3, group1};
+				}
+				else
+				{
+					return new int[]{group3, group2, group1};
+				}
+			}
 		}
 	}
 }

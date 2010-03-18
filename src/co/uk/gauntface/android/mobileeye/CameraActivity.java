@@ -1,5 +1,6 @@
 package co.uk.gauntface.android.mobileeye;
 
+import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -34,6 +35,8 @@ public class CameraActivity extends Activity implements Callback
 	private SurfaceHolder mSurfaceHolder;
 	private Handler mHandler;
 	private Button mOutputHistogramBtn;
+	
+	private BluetoothConnectionThread mBluetoothConnection;
 	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState)
@@ -85,6 +88,20 @@ public class CameraActivity extends Activity implements Callback
         super.onPause();
     }
     
+    protected void onStop()
+    {
+    	super.onStop();
+    	
+    	mBluetoothConnection.cancel();
+    }
+    
+    protected void onDestroy()
+    {
+    	super.onDestroy();
+    	
+    	mBluetoothConnection.cancel();
+    }
+    
     private void initActivity()
     {
     	mHandler = new Handler(){
@@ -123,6 +140,9 @@ public class CameraActivity extends Activity implements Callback
     		}
     		
     	};
+    	
+    	mBluetoothConnection = Singleton.getBluetoothConnection();
+    	
     	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
     	

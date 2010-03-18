@@ -1,6 +1,7 @@
 package co.uk.gauntface.android.mobileeye;
 
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
+import android.content.BroadcastReceiver;
 import android.graphics.Bitmap;
 
 public class Singleton
@@ -11,7 +12,7 @@ public class Singleton
 	/**
 	 * Bluetooth connection
 	 */
-	public static BluetoothConnectionThread mBluetoothConnection = null;
+	private static BluetoothConnectionThread mBluetoothConnection = null;
 	
 	public static BluetoothConnectionThread getBluetoothConnection()
 	{

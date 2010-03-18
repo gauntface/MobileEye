@@ -5,11 +5,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 
+import co.uk.gauntface.android.mobileeye.imageprocessing.AreaExtraction;
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeDetection;
 import co.uk.gauntface.android.mobileeye.imageprocessing.EdgeFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.GaussianBlur;
 import co.uk.gauntface.android.mobileeye.imageprocessing.GaussianFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.IPUtility;
+import co.uk.gauntface.android.mobileeye.imageprocessing.ImagePackage;
 import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegment;
 import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegmentFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.Utility;
@@ -85,13 +87,21 @@ public class ImageProcessingThread extends Thread
 		//pixels = edgeDetection.classifyEdges(pixels, b.getWidth(), b.getHeight());
 		
 		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
-		pixels = quickSegment.segmentImage(pixels, mLogHistogram);
-		
-		b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
+		ImagePackage imgPackage = quickSegment.segmentImage(pixels, mLogHistogram, b.getWidth(), b.getHeight());
 		
 		if(mLogHistogram == true)
 		{
+			b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
 			Utility.saveImageToSDCard(b, "Segment.png");
+		}
+		
+		imgPackage = AreaExtraction.getExtraction(imgPackage);
+		
+		b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+		
+		if(mLogHistogram == true)
+		{
+			Utility.saveImageToSDCard(b, "AreaExtraction.png");
 		}
 		
 		//Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height);
@@ -99,8 +109,7 @@ public class ImageProcessingThread extends Thread
 		Singleton.updateImageView = b;
 		
 		Message msg = CameraWrapper.mHandler.obtainMessage();
-		// TODO: Fix
-		//msg.arg1 = MobileEye.DRAW_IMAGE_PROCESSING;
+		msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
 		
 		Bundle data = new Bundle();
 		
