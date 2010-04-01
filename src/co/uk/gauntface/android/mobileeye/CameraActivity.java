@@ -2,6 +2,7 @@ package co.uk.gauntface.android.mobileeye;
 
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -27,6 +28,7 @@ public class CameraActivity extends Activity implements Callback
 	
 	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
 	public static final int BLUETOOTH_STREAMS_INIT = 3;
+	public static final int BLUETOOTH_CONNECTION_LOST = 4;
 	
 	private SurfaceView mSurfaceView;
 	private ImageView mImageProcessedSurfaceView;
@@ -92,14 +94,20 @@ public class CameraActivity extends Activity implements Callback
     {
     	super.onStop();
     	
-    	mBluetoothConnection.cancel();
+    	if(mBluetoothConnection != null)
+    	{
+    		mBluetoothConnection.cancel();
+    	}
     }
     
     protected void onDestroy()
     {
     	super.onDestroy();
     	
-    	mBluetoothConnection.cancel();
+    	if(mBluetoothConnection != null)
+    	{
+    		mBluetoothConnection.cancel();
+    	}
     }
     
     private void initActivity()
@@ -137,11 +145,22 @@ public class CameraActivity extends Activity implements Callback
     					
     				});
     			}
+    			else if(msg.arg1 == BLUETOOTH_CONNECTION_LOST)
+    			{
+    				Intent intent = new Intent(getApplicationContext(), MobileEye.class);
+    				startActivity(intent);
+    				
+    				finish();
+    			}
     		}
     		
     	};
     	
     	mBluetoothConnection = Singleton.getBluetoothConnection();
+    	if(mBluetoothConnection != null)
+    	{
+    		mBluetoothConnection.setHandler(mHandler);
+    	}
     	
     	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);

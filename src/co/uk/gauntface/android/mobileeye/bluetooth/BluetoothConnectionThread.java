@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
+import co.uk.gauntface.android.mobileeye.CameraActivity;
 import co.uk.gauntface.android.mobileeye.MobileEye;
 
 import android.bluetooth.BluetoothDevice;
@@ -39,7 +40,10 @@ public class BluetoothConnectionThread extends Thread
 			Message msg = Message.obtain();
 			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 0;
-			mHandler.sendMessage(msg);
+			synchronized(mHandler)
+	    	{
+				mHandler.sendMessage(msg);
+	    	}
 			
 			Log.e("mobileeye", "Connection to bluetooth server failed");
 			e.printStackTrace();
@@ -65,7 +69,10 @@ public class BluetoothConnectionThread extends Thread
         	Message msg = Message.obtain();
 			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 1;
-			mHandler.sendMessage(msg);
+			synchronized(mHandler)
+	    	{
+				mHandler.sendMessage(msg);
+	    	}
 			
             // Unable to connect; close the socket and get out
             try
@@ -77,8 +84,10 @@ public class BluetoothConnectionThread extends Thread
             	Message msg2 = Message.obtain();
     			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
     			msg.arg2 = 2;
-    			mHandler.sendMessage(msg2);
-    			
+    			synchronized(mHandler)
+    	    	{
+    				mHandler.sendMessage(msg);
+    	    	}
             }
             
             return;
@@ -86,7 +95,10 @@ public class BluetoothConnectionThread extends Thread
         
         Message msg = Message.obtain();
         msg.arg1 = MobileEye.BLUETOOTH_CONNECT_SUCCESSFUL;
-        mHandler.sendMessage(msg);
+        synchronized(mHandler)
+    	{
+			mHandler.sendMessage(msg);
+    	}
         
         // Do work to manage the connection (in a separate thread)
         manageConnectedSocket();
@@ -99,17 +111,25 @@ public class BluetoothConnectionThread extends Thread
 
         // Get the input and output streams, using temp objects because
         // member streams are final
-        try {
+        try
+        {
             tmpIn = mBluetoothSocket.getInputStream();
             tmpOut = mBluetoothSocket.getOutputStream();
-        } catch (IOException e) { }
+        }
+        catch(IOException e)
+        {
+        	
+        }
 
         mInputStream = tmpIn;
         mOutputStream = tmpOut;
         
         Message msg = Message.obtain();
         msg.arg1 = MobileEye.BLUETOOTH_STREAMS_INIT;
-        mHandler.sendMessage(msg);
+        synchronized(mHandler)
+    	{
+			mHandler.sendMessage(msg);
+    	}
         
         byte[] buffer = new byte[1024];  // buffer store for the stream
         int bytes; // bytes returned from read()
@@ -127,6 +147,12 @@ public class BluetoothConnectionThread extends Thread
             }
             catch (IOException e)
             {
+            	Message errorMsg = Message.obtain();
+            	errorMsg.arg1 = CameraActivity.BLUETOOTH_CONNECTION_LOST;
+                synchronized(mHandler)
+            	{
+        			mHandler.sendMessage(errorMsg);
+            	}
                 break;
             }
         }
@@ -141,7 +167,7 @@ public class BluetoothConnectionThread extends Thread
         }
         catch (IOException e)
         {
-        	
+        	Log.e("mobileeye", "Error when writing bytes");
         }
     }
     
@@ -157,7 +183,18 @@ public class BluetoothConnectionThread extends Thread
         	Message msg = Message.obtain();
 			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 3;
-			mHandler.sendMessage(msg);
+			synchronized(mHandler)
+	    	{
+				mHandler.sendMessage(msg);
+	    	}
+        }
+    }
+    
+    public void setHandler(Handler h)
+    {
+    	synchronized(mHandler)
+    	{
+    		mHandler = h;
         }
     }
 }

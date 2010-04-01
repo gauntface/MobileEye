@@ -16,6 +16,7 @@ public final class R {
     public static final class id {
         public static final int BluetoothConnectBtn=0x7f050005;
         public static final int BluetoothDeviceListView=0x7f050004;
+        public static final int BluetoothSkipBtn=0x7f050006;
         public static final int CameraSurfaceView=0x7f050000;
         public static final int ImageProcessedSurfaceView=0x7f050001;
         public static final int LinearLayout01=0x7f050002;

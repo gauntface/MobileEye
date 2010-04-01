@@ -159,17 +159,7 @@ public class MobileEye extends Activity
     			}
     			else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
     			{
-    				Singleton.setBluetoothConnection(mConnectThread);
-    				
-    				Toast t = Toast.makeText(getApplicationContext(),
-    						"Start Camera Activity",
-    						Toast.LENGTH_LONG);
-    				
-    				t.show();
-    				
-    				Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
-    				startActivity(intent);
-    				finish();
+    				startCameraActivity(mConnectThread);
     				
     				//String s = new String("Travelling through the air");
     				//mConnectThread.write(s.getBytes());
@@ -205,6 +195,15 @@ public class MobileEye extends Activity
 			}
     		
     	});
+    	
+    	Button bluetoothSkip = (Button) findViewById(R.id.BluetoothSkipBtn);
+    	bluetoothSkip.setOnClickListener(new OnClickListener() {
+			
+			public void onClick(View v)
+			{
+				startCameraActivity(null);
+			}
+		});
     	
     	mArrayAdapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1);
     	mBluetoothDevices = new ArrayList<BluetoothDevice>();
@@ -264,5 +263,21 @@ public class MobileEye extends Activity
     	{
     		Log.e("mobileeye", "Error occured when attempting to discover bluetooth devices");
     	}
+    }
+    
+    private void startCameraActivity(BluetoothConnectionThread btConnectThread)
+    {
+    	Singleton.setBluetoothConnection(btConnectThread);
+		
+		Toast t = Toast.makeText(getApplicationContext(),
+				"Start Camera Activity",
+				Toast.LENGTH_LONG);
+		
+		t.show();
+		
+		Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
+		startActivity(intent);
+		
+		finish();
     }
 }
