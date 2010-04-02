@@ -33,7 +33,7 @@ public class AreaExtraction
 		mTopLeft = new int[]{centerX, centerY};
 		mBottomRight = new int[]{centerX, centerY};
 		
-		Log.v(Singleton.TAG, "Center Max Group = ("+mCenter[0]+","+mCenter[1]+")");
+		//Log.v(Singleton.TAG, "Center Max Group = ("+mCenter[0]+","+mCenter[1]+")");
 		
 		boolean run = true;
 		while(run)
@@ -71,7 +71,7 @@ public class AreaExtraction
 	{
 		int xSpread = mBottomRight[0] - mTopLeft[0];
 		int ySpread = mBottomRight[1] - mTopLeft[1];
-		Log.v(Singleton.TAG, "ySpread = " + ySpread);
+		//Log.v(Singleton.TAG, "ySpread = " + ySpread);
 		
 		int tempTopY = mTopLeft[1];
 		if(mTopLeft[1] > 0)
@@ -161,7 +161,7 @@ public class AreaExtraction
 			}
 		}
 		
-		Log.v(Singleton.TAG, "topX = "+mTopLeft[0]+" topY = " + mTopLeft[1]+" bottomX = "+mBottomRight[0]+" bottomY = " + mBottomRight[1]);
+		//Log.v(Singleton.TAG, "topX = "+mTopLeft[0]+" topY = " + mTopLeft[1]+" bottomX = "+mBottomRight[0]+" bottomY = " + mBottomRight[1]);
 		
 		if(tempTopX == mTopLeft[0] && tempTopY == mTopLeft[1] &&
 				tempBottomX == mBottomRight[0] && tempBottomY == mBottomRight[1])

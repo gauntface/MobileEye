@@ -1,7 +1,9 @@
 package co.uk.gauntface.android.mobileeye.bluetooth;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.UUID;
 
@@ -132,21 +134,38 @@ public class BluetoothConnectionThread extends Thread
     	}
         
         byte[] buffer = new byte[1024];  // buffer store for the stream
-        int bytes; // bytes returned from read()
-
-        // Keep listening to the InputStream until an exception occurs
+        int noBytes;
+        
         while (true)
         {
-            try
-            {
-                // Read from the InputStream
-                bytes = mInputStream.read(buffer);
-                // Send the obtained bytes to the UI Activity
-                Log.v("mobileeye", "Received data");
-                //mHandler.obtainMessage(BluetoothTest.BLUETOOTH_BYTES_RECEIVED, bytes, -1, buffer).sendToTarget();
-            }
-            catch (IOException e)
-            {
+        	try
+    		{
+    			noBytes = mInputStream.read(buffer);
+    			byte[] recvInfo = new byte[noBytes];
+    			
+    			// Keep listening to the InputStream until an exception occurs
+    	        for(int i = 0; i < noBytes; i++)
+    	        {
+    	        	recvInfo[i] = buffer[i];
+    	        }
+    	        
+    	        String data = new String(recvInfo);
+    	        
+    	        Log.v("mobileeye", "Data Received - " + data);
+    	        
+    	        if(data.equals("<ConnectionConfirm></ConnectionConfirm>"))
+    	        {
+    	        	Message successMsg = Message.obtain();
+    	        	successMsg.arg1 = MobileEye.BLUETOOTH_CONNECT_CONFIRMED;
+                    synchronized(mHandler)
+                	{
+            			mHandler.sendMessage(successMsg);
+                	}
+    	        }
+    		}
+    		catch (IOException e1)
+    		{
+    			Log.v("mobileeye", "IOException occured");
             	Message errorMsg = Message.obtain();
             	errorMsg.arg1 = CameraActivity.BLUETOOTH_CONNECTION_LOST;
                 synchronized(mHandler)
@@ -154,7 +173,7 @@ public class BluetoothConnectionThread extends Thread
         			mHandler.sendMessage(errorMsg);
             	}
                 break;
-            }
+    		}
         }
 	}
 

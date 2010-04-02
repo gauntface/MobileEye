@@ -36,6 +36,7 @@ public class MobileEye extends Activity
 	public static final int BLUETOOTH_CONNECT_FAILED = 0;
 	public static final int BLUETOOTH_CONNECT_SUCCESSFUL = 1;
 	public static final int BLUETOOTH_STREAMS_INIT = 3;
+	public static final int BLUETOOTH_CONNECT_CONFIRMED = 4;
 	
 	// Initialised here as we need to maintain this receiver through
 	// the Activity lifecycle
@@ -159,11 +160,12 @@ public class MobileEye extends Activity
     			}
     			else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
     			{
+    				String s = new String("<ConnectionConfirm></ConnectionConfirm>");
+    				mConnectThread.write(s.getBytes());
+    			}
+    			else if(msg.arg1 == MobileEye.BLUETOOTH_CONNECT_CONFIRMED)
+    			{
     				startCameraActivity(mConnectThread);
-    				
-    				//String s = new String("Travelling through the air");
-    				//mConnectThread.write(s.getBytes());
-    				//Log.v("mobileeye", "Sending data");
     			}
     		}
     		
