@@ -80,29 +80,26 @@ public class ImageProcessingThread extends Thread
 			
 			Utility.saveImageToSDCard(b, "BW.png");
 		}
-		//GaussianBlur gaussianBlur = GaussianFactory.getGaussianBlur();
-		//pixels = gaussianBlur.blurImage(pixels, b.getWidth(), b.getHeight());
-		
-		//EdgeDetection edgeDetection = EdgeFactory.getEdgeDetector();
-		//pixels = edgeDetection.classifyEdges(pixels, b.getWidth(), b.getHeight());
 		
 		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
 		ImagePackage imgPackage = quickSegment.segmentImage(pixels, mLogHistogram, b.getWidth(), b.getHeight());
-		
-		if(mLogHistogram == true)
-		{
-			b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
-			Utility.saveImageToSDCard(b, "Segment.png");
-		}
-		
-		imgPackage = AreaExtraction.getExtraction(imgPackage);
 		
 		b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
 		
 		if(mLogHistogram == true)
 		{
-			Utility.saveImageToSDCard(b, "AreaExtraction.png");
+			//b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+			Utility.saveImageToSDCard(b, "Segment.png");
 		}
+		
+		//imgPackage = AreaExtraction.getExtraction(imgPackage);
+		
+		//b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+		
+		//if(mLogHistogram == true)
+		//{
+		//	Utility.saveImageToSDCard(b, "AreaExtraction.png");
+		//}
 		
 		//Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height);
 		
