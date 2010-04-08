@@ -237,7 +237,7 @@ public class CameraActivity extends Activity implements Callback
 		// Make sure we have a surface in the holder before proceeding.
         if (holder.getSurface() == null)
         {
-            Log.d(Singleton.TAG, "Camera surfaceChanged holder.getSurface() == null");
+            Log.v(Singleton.TAG, "Camera surfaceChanged holder.getSurface() == null");
             return;
         }
         

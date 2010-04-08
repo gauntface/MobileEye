@@ -27,6 +27,8 @@ public class QuickSegment
 	private int GROUP_1_COLOR = 120;
 	private int GROUP_2_COLOR = 60;
 	
+	private boolean mLog;
+	
 	public QuickSegment()
 	{
 		
@@ -34,9 +36,12 @@ public class QuickSegment
 	
 	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight)
 	{
+		mLog = log;
+		
 		int[] pixelBuckets = createHistogram(origPixels);
 		int[] avgPixelBuckets = averageArray(pixelBuckets);
-		int[] maxIndices = hillClimb(avgPixelBuckets);
+		
+		Peak[] maxIndices = hillClimb(avgPixelBuckets);
 		ArrayList<Pair> groupValues = groupAndMerge(avgPixelBuckets, maxIndices);
 		
 		ImagePackage imgPkg = generateImagePkg(origPixels, groupValues, imgWidth, imgHeight);
@@ -94,49 +99,71 @@ public class QuickSegment
 		return newArray;
 	}
 	
-	private int[] hillClimb(int[] data)
+	private Peak[] hillClimb(int[] data)
 	{
-		ArrayList<Integer> maxPoints = findHillPeaks(data);
+		long startTime = System.currentTimeMillis();
 		
-		int[] maxIndices = extractTopPeaks(data, maxPoints);
+		ArrayList<Peak> maxPoints = findHillPeaks(data);
+		
+		long endTime = System.currentTimeMillis();
+		Log.d("mobileeye", "Time taken NEW = " + (endTime - startTime) + " milliseconds");
+		
+		
+		
+		Peak[] maxIndices = extractTopPeaks(data, maxPoints);
 		
 		return maxIndices;
 	}
 	
-	private ArrayList<Integer> findHillPeaks(int[] data)
+	private ArrayList<Peak> findHillPeaks(int[] data)
 	{
-		ArrayList<Integer> maxPoints = new ArrayList<Integer>();
+		ArrayList<Peak> maxPoints = new ArrayList<Peak>();
 		
-		// Should these be dynamic?
-		int[] startPoints = new int[]{5, 15, 25, 35, 45, 50, 55};
+		int minGroupIndex = 0;
+		int maxGroupIndex = 0;
+		int currentPeakIndex = 0;
 		
-		int dataMaxIndex = data.length - 1;
+		boolean foundPeak = false;
 		
-		// Merge start points, fewer iterations?
-		// If five passes 15, 25 etc then don't bother with 15, 25 etc
-		for(int i = 0; i < startPoints.length; i++)
+		for(int i = 1; i < data.length; i++)
 		{
-			int climbIndex = startPoints[i];
-			boolean maximumFound = false;
-			while(maximumFound == false)
+			if(foundPeak == false)
 			{
-				if(climbIndex < dataMaxIndex && data[climbIndex + 1] > data[climbIndex])
+				if(data[i] > data[currentPeakIndex])
 				{
-					climbIndex = climbIndex + 1;
+					currentPeakIndex = i;
 				}
-				else if(climbIndex > 0 && data[climbIndex - 1] > data[climbIndex])
+				else
+				{	
+					foundPeak = true;
+					maxGroupIndex = i;
+				}
+				
+				if((i + 1) == data.length)
 				{
-					climbIndex = climbIndex - 1;
+					maxGroupIndex = i;
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
+				}
+			}
+			else
+			{
+				if(data[i] < data[maxGroupIndex])
+				{
+					maxGroupIndex = i;
 				}
 				else
 				{
-					// Make sure small values don't get considered as a group
-					if(data[climbIndex] > BUCKET_MIN_SIZE_THRESHOLD)
-					{
-						maxPoints.add(climbIndex);
-					}
-					maximumFound = true;
-					// Prune start points here
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
+					
+					foundPeak = false;
+					
+					minGroupIndex = maxGroupIndex;
+					currentPeakIndex = i;
+				}
+				
+				if((i + 1) == data.length)
+				{
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
 				}
 			}
 		}
@@ -144,124 +171,99 @@ public class QuickSegment
 		return maxPoints;
 	}
 	
-	private int[] extractTopPeaks(int[] data, ArrayList<Integer> maxPoints)
+	private Peak[] extractTopPeaks(int[] data, ArrayList<Peak> maxPoints)
 	{
-		int group1 = -1;
-		int group2 = -1;
-		int group3 = -1;
+		Peak group1 = new Peak();
+		Peak group2 = new Peak();
+		Peak group3 = new Peak();
 		
 		for(int i = 0; i < maxPoints.size(); i++)
 		{
-			int maxPoint = maxPoints.get(i);
+			int peakIndex = maxPoints.get(i).getPeakIndex();
 			
-			if(maxPoint != group1 && maxPoint != group2 && maxPoint != group3)
+			if(peakIndex != group1.getPeakIndex()
+					&& peakIndex != group2.getPeakIndex()
+					&& peakIndex != group3.getPeakIndex())
 			{
-				if(group1 == -1 || data[maxPoint] > data[group1])
+				if(group1.getPeakIndex() == -1 || data[peakIndex] > data[group1.getPeakIndex()])
 				{
 					group3 = group2;
 					group2 = group1;
-					group1 = maxPoint;
+					group1 = maxPoints.get(i);
 				}
-				else if(group2 == -1 || data[maxPoint] > data[group2])
+				else if(group2.getPeakIndex() == -1 || data[peakIndex] > data[group2.getPeakIndex()])
 				{
 					group3 = group2;
-					group2 = maxPoint;
+					group2 = maxPoints.get(i);
 				}
-				else if(group3 == -1 || data[maxPoint] > data[group3])
+				else if(group3.getPeakIndex() == -1 || data[peakIndex] > data[group3.getPeakIndex()])
 				{
-					group3 = maxPoint;
+					group3 = maxPoints.get(i);
 				}
 			}
 		}
 		
-		if(group1 == -1)
+		if(group1.getPeakIndex() == -1)
 		{
-			return new int[]{};
+			return new Peak[]{};
 		}
-		else if(group2 == -1)
+		else if(group2.getPeakIndex() == -1)
 		{
-			return new int[]{group1};
+			return new Peak[]{group1};
 		}
-		else if(group3 == -1)
+		else if(group3.getPeakIndex() == -1)
 		{
-			if(group1 > group2)
+			if(group1.getPeakIndex() > group2.getPeakIndex())
 			{
-				return new int[]{group1, group2};
+				return new Peak[]{group1, group2};
 			}
 			else
 			{
-				return new int[]{group2, group1};
+				return new Peak[]{group2, group1};
 			}
 		}
 		else
 		{
-			if(group1 > group2)
+			if(group1.getPeakIndex() > group2.getPeakIndex())
 			{
-				if(group2 > group3)
+				if(group2.getPeakIndex() > group3.getPeakIndex())
 				{
-					return new int[]{group1, group2, group3};
+					return new Peak[]{group1, group2, group3};
 				}
-				else if(group1 > group3)
+				else if(group1.getPeakIndex() > group3.getPeakIndex())
 				{
-					return new int[]{group1, group3, group2};
+					return new Peak[]{group1, group3, group2};
 				}
 				else
 				{
-					return new int[]{group3, group1, group2}; 
+					return new Peak[]{group3, group1, group2}; 
 				}
 			}
 			else
 			{
-				if(group1 > group3)
+				if(group1.getPeakIndex() > group3.getPeakIndex())
 				{
-					return new int[]{group2, group1, group3};
+					return new Peak[]{group2, group1, group3};
 				}
-				else if(group2 > group3)
+				else if(group2.getPeakIndex() > group3.getPeakIndex())
 				{
-					return new int[]{group2, group3, group1};
+					return new Peak[]{group2, group3, group1};
 				}
 				else
 				{
-					return new int[]{group3, group2, group1};
+					return new Peak[]{group3, group2, group1};
 				}
 			}
 		}
 	}
 	
-	public ArrayList<Pair> groupAndMerge(int[] data, int[] maxIndices)
+	public ArrayList<Pair> groupAndMerge(int[] data, Peak[] maxIndices)
 	{
 		ArrayList<Pair> groupValues = new ArrayList<Pair>();
 		for(int i = 0; i < maxIndices.length; i++)
 		{
-			// TODO Make this span more of the histogram lowest 1, next one up 2, third one third
-			int minGroupValue = maxIndices[i];
-			int maxGroupValue = maxIndices[i];
-			
-			boolean findingMin = true;
-			while(findingMin)
-			{
-				if(minGroupValue == 0 || data[minGroupValue] < data[minGroupValue - 1])
-				{
-					findingMin = false;
-				}
-				else
-				{
-					minGroupValue = minGroupValue - 1;
-				}
-			}
-			
-			boolean findingMax = true;
-			while(findingMax)
-			{
-				if(maxGroupValue == (data.length - 1) || data[maxGroupValue] < data[maxGroupValue + 1])
-				{
-					findingMax = false;
-				}
-				else
-				{
-					maxGroupValue = maxGroupValue + 1;
-				}
-			}
+			int minGroupValue = maxIndices[i].getMinIndex();
+			int maxGroupValue = maxIndices[i].getMaxIndex();
 			
 			if(SHOULD_MERGE_GROUPS == true)
 			{
@@ -360,7 +362,7 @@ public class QuickSegment
 		
 		ArrayList<Pair> groupCenters = new ArrayList<Pair>();
 		
-		if(group0Count > 0)
+		/**if(group0Count > 0)
 		{
 			int xCoord = avgGroup0x / group0Count;
 			int yCoord = avgGroup0y / group0Count;
@@ -377,7 +379,7 @@ public class QuickSegment
 			int xCoord = avgGroup2x / group2Count;
 			int yCoord = avgGroup2y / group2Count;
 			groupCenters.add(new Pair(xCoord, yCoord));
-		}
+		}**/
 		
 		ImagePackage imgPacket = new ImagePackage(newPixels, imgWidth, imgHeight, groupValues, groupCenters);
 		

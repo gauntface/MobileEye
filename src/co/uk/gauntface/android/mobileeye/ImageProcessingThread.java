@@ -42,31 +42,38 @@ public class ImageProcessingThread extends Thread
 	{
 		mData = mData.clone();
 		
-		YUVPixel yuvPixel = new YUVPixel(mData, mImageSize.width, mImageSize.height, 0, 0, mImageSize.width, mImageSize.height);
+		Bitmap b;
 		
-		Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height, true);
-		b = IPUtility.transformPhoto(new Matrix(), b, (int) Math.floor(b.getWidth() / 3), (int) Math.floor(b.getHeight() / 3), false);
+		YUVPixel yuvPixel = new YUVPixel(mData, mImageSize.width, mImageSize.height, 0, 0, mImageSize.width, mImageSize.height, 4);
+		//yuvPixel = IPUtility.shrinkImage(yuvPixel, 3);
 		
-		int[] pixels = new int[b.getWidth() * b.getHeight()];
-		b.getPixels(pixels, 0, b.getWidth(), 0, 0, b.getWidth(), b.getHeight());
+		//Bitmap b = Utility.renderBitmap(yuvPixel.getPixels(), mImageSize.width, mImageSize.height, true);
+		//b = IPUtility.transformPhoto(new Matrix(), b, (int) Math.floor(b.getWidth() / 3), (int) Math.floor(b.getHeight() / 3), false);
 		
-		for(int i = 0; i < pixels.length; i++)
-		{
-			int red = Color.red(pixels[i]);
-			int green = Color.green(pixels[i]);
-			int blue = Color.blue(pixels[i]);
+		//int[] pixels = new int[b.getWidth() * b.getHeight()];
+		//b.getPixels(pixels, 0, b.getWidth(), 0, 0, b.getWidth(), b.getHeight());
+		
+		//for(int i = 0; i < pixels.length; i++)
+		//{
+			//int red = Color.red(pixels[i]);
+			//int green = Color.green(pixels[i]);
+			//int blue = Color.blue(pixels[i]);
 			
-			pixels[i] = (int) ((0.3 * red) + (0.59 * green) + (0.11 * blue));
+			//pixels[i] = (int) ((0.3 * red) + (0.59 * green) + (0.11 * blue));
 			
-			if(pixels[i] > 255)
-			{
-				pixels[i] = 255;
-			}
-			else if(pixels[i] < 0)
-			{
-				pixels[i] = 0;
-			}
-		}
+			//if(pixels[i] > 255)
+			//{
+				//pixels[i] = 255;
+			//}
+			//else if(pixels[i] < 0)
+			//{
+				//pixels[i] = 0;
+			//}
+		//}
+		
+		//yuvPixel.setPixels(pixels);
+		//yuvPixel.setImgWidth(b.getWidth());
+		//yuvPixel.setImgHeight(b.getHeight());
 		
 		if(mLogHistogram == true)
 		{
@@ -76,15 +83,15 @@ public class ImageProcessingThread extends Thread
 			
 			Utility.setFilePrePend(currentTime);
 			
-			b = Utility.renderBitmap(pixels, b.getWidth(), b.getHeight(), true);
+			b = Utility.renderBitmap(yuvPixel.getPixels(), yuvPixel.getImgWidth(), yuvPixel.getImgHeight(), true);
 			
 			Utility.saveImageToSDCard(b, "BW.png");
 		}
 		
 		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
-		ImagePackage imgPackage = quickSegment.segmentImage(pixels, mLogHistogram, b.getWidth(), b.getHeight());
+		ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), mLogHistogram, yuvPixel.getImgWidth(), yuvPixel.getImgHeight());
 		
-		b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+		b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 		
 		if(mLogHistogram == true)
 		{

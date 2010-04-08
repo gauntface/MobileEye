@@ -267,4 +267,145 @@ public class IPUtility
 		
 		return pixels;
 	}
+
+	/**int deltaX = src.getWidth() - targetWidth;
+	int deltaY = src.getHeight() - targetHeight;
+	
+	float bitmapWidthF = src.getWidth();
+	float bitmapHeightF = src.getHeight();
+
+	float bitmapAspect = bitmapWidthF / bitmapHeightF;
+	float viewAspect   = (float) targetWidth / targetHeight;
+
+	if (bitmapAspect > viewAspect)
+	{
+		float scale = targetHeight / bitmapHeightF;
+		if (scale < .9F || scale > 1F)
+		{
+			scaler.setScale(scale, scale);
+		}
+		else
+		{
+			scaler = null;
+		}
+	}
+	else
+	{
+		float scale = targetWidth / bitmapWidthF;
+		if (scale < .9F || scale > 1F)
+		{
+			scaler.setScale(scale, scale);
+		}
+		else
+		{
+			scaler = null;
+		}
+	}
+	
+	Bitmap b1;
+	if (scaler != null)
+	{
+		// this is used for minithumb and crop, so we want to filter here.
+		b1 = Bitmap.createBitmap(src, 0, 0,
+		src.getWidth(), src.getHeight(), scaler, true);
+	}
+	else
+	{
+		b1 = src;
+	}
+	
+	int dx1 = Math.max(0, b1.getWidth() - targetWidth);
+	int dy1 = Math.max(0, b1.getHeight() - targetHeight);
+
+	Bitmap b2 = Bitmap.createBitmap(b1, dx1 / 2, dy1 / 2, targetWidth, targetHeight);
+	
+	if (b1 != src)
+	{
+		b1.recycle();
+	}
+
+	return b2;
+	**/
+	/**
+	 * NOTE: The scale down must yield an integer ratio
+	 */
+	public static YUVPixel shrinkImage(YUVPixel yuvPixel, int scaleDownFactor)
+	{
+		int origImgWidth = yuvPixel.getImgWidth();
+		int origImgHeight = yuvPixel.getImgHeight();
+		
+		int targetWidth = origImgWidth / scaleDownFactor;
+		int targetHeight = origImgHeight / scaleDownFactor;
+		
+		int xRatio = origImgWidth / targetWidth;
+		int yRatio = origImgHeight / targetHeight;
+		
+		int[] pixels = yuvPixel.getPixels();
+		int[] newPixels = new int[targetWidth * targetHeight];
+		
+		int yNewOffset = 0;
+		int yOrigImgIndex = 0;
+
+		for(int y = 0; y < targetHeight; y++)
+		{
+			int xOrigImgIndex = 0;
+			for(int x = 0; x < targetWidth; x++)
+			{
+				newPixels[yNewOffset + x] = pixels[(yOrigImgIndex * origImgWidth) + xOrigImgIndex];
+				
+				xOrigImgIndex = xOrigImgIndex + xRatio;
+			}
+			
+			yNewOffset = yNewOffset + targetWidth;
+			yOrigImgIndex = yOrigImgIndex + yRatio;
+		}
+		
+		yuvPixel.setPixels(newPixels);
+		yuvPixel.setImgWidth(targetWidth);
+		yuvPixel.setImgHeight(targetHeight);
+		
+		return yuvPixel;
+		
+		/**
+		int[] origPixels = yuvPixel.getPixels();
+		int[] newPixels = new int[origPixels.length];
+		
+		int srcWidth = yuvPixel.getImgWidth();
+		int srcHeight = yuvPixel.getImgHeight();
+		
+		int targetWidth =  srcWidth / 2;
+		int targetHeight = srcHeight / 2;
+		
+		int rowOffset = 0;
+		int nextRowOffset = rowOffset + srcWidth;
+		
+		for(int y = 0; y < targetHeight; y++)
+		{
+			int yOffset = 2 * y;
+			int newYOffset = y * targetWidth;
+			
+			for(int x = 0; x < targetWidth; x++)
+			{
+				int xOffset = 2 * x;
+				int xOffsetPlus1 = xOffset + 1;
+				
+				int newPixelValue = (int) (
+						(origPixels[rowOffset+xOffset]
+					+ origPixels[rowOffset + xOffsetPlus1]
+					+ origPixels[nextRowOffset + xOffset]
+					+ origPixels[nextRowOffset + xOffsetPlus1]) / 4);
+				
+				newPixels[newYOffset + x] = newPixelValue;
+			}
+			
+			rowOffset = nextRowOffset;
+			nextRowOffset = rowOffset + srcWidth;
+		}
+		
+		yuvPixel.setPixels(newPixels);
+		yuvPixel.setImgWidth(targetWidth);
+		yuvPixel.setImgHeight(targetHeight);
+		
+		return yuvPixel;**/
+	}
 }

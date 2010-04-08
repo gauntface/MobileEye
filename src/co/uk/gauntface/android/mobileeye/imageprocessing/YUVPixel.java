@@ -12,10 +12,12 @@ public class YUVPixel
 	private int mTopOffset;
 	private int mCroppedImgWidth;
 	private int mCroppedImgHeight;
+	private int mScaleDownFactor;
 	
 	public YUVPixel(byte[] data, int imgWidth, int imgHeight,
 			int leftOffset, int topOffset,
-			int croppedWidth, int croppedHeight)
+			int croppedWidth, int croppedHeight,
+			int scaleDownFactor)
 	{
 		mData = data;
 		mImgWidth = imgWidth;
@@ -24,6 +26,7 @@ public class YUVPixel
 		mTopOffset = topOffset;
 		mCroppedImgWidth = croppedWidth;
 		mCroppedImgHeight = croppedHeight;
+		mScaleDownFactor = scaleDownFactor;
 		
 		if (mLeftOffset + mCroppedImgWidth > mImgWidth 
 				|| mTopOffset + mCroppedImgHeight > mImgHeight) {
@@ -35,22 +38,76 @@ public class YUVPixel
 		//convertToPixels();
 	}
 	
+	/**int origImgWidth = yuvPixel.getImgWidth();
+	int origImgHeight = yuvPixel.getImgHeight();
+	
+	int targetWidth = origImgWidth / scaleDownFactor;
+	int targetHeight = origImgHeight / scaleDownFactor;
+	
+	int xRatio = origImgWidth / targetWidth;
+	int yRatio = origImgHeight / targetHeight;
+	
+	int[] pixels = yuvPixel.getPixels();
+	int[] newPixels = new int[targetWidth * targetHeight];
+	
+	int yNewOffset = 0;
+	int yOrigImgIndex = 0;
+
+	for(int y = 0; y < targetHeight; y++)
+	{
+		int xOrigImgIndex = 0;
+		for(int x = 0; x < targetWidth; x++)
+		{
+			newPixels[yNewOffset + x] = pixels[(yOrigImgIndex * origImgWidth) + xOrigImgIndex];
+			
+			xOrigImgIndex = xOrigImgIndex + xRatio;
+		}
+		
+		yNewOffset = yNewOffset + targetWidth;
+		yOrigImgIndex = yOrigImgIndex + yRatio;
+	}
+	
+	yuvPixel.setPixels(newPixels);
+	yuvPixel.setImgWidth(targetWidth);
+	yuvPixel.setImgHeight(targetHeight);**/
+	
 	private void createPixels()
 	{
-		mPixels = new int[mCroppedImgWidth * mCroppedImgHeight];
-		int inputOffset = mTopOffset * mImgWidth + mLeftOffset;
+		int xRatio = mScaleDownFactor;
+		int yRatio = mScaleDownFactor;
 		
-		for (int y = 0; y < mCroppedImgHeight; y++)
-	    {
-	    	int outputOffset = y * mCroppedImgWidth;
-	    	for (int x = 0; x < mCroppedImgWidth; x++)
-	    	{
-	    		int grey = mData[inputOffset + x] & 0xff;
-	    		mPixels[outputOffset + x] = grey;
-	    	}
-	    	inputOffset = inputOffset + mImgWidth;
-	    }
+		int targetWidth = mCroppedImgWidth / mScaleDownFactor;
+		int targetHeight = mCroppedImgHeight / mScaleDownFactor;
 		
+		mPixels = new int[targetWidth * targetHeight];
+		
+		int yNewOffset = 0;
+		int yOrigImgIndex = mTopOffset * mImgWidth + mLeftOffset;
+		
+		int yOrigImgSkip = yRatio * mCroppedImgWidth;
+		
+		for(int y = 0; y < targetHeight; y++)
+		{
+			int xOrigImgIndex = 0;
+			for(int x = 0; x < targetWidth; x++)
+			{
+				int greyPixel = mData[yOrigImgIndex + xOrigImgIndex] & 0xff;
+				mPixels[yNewOffset + x] = greyPixel;
+				
+				xOrigImgIndex = xOrigImgIndex + xRatio;
+			}
+			
+			yNewOffset = yNewOffset + targetWidth;
+			yOrigImgIndex = yOrigImgIndex + yOrigImgSkip;
+		}
+		
+		mCroppedImgWidth = targetWidth;
+		mCroppedImgHeight = targetHeight;
+	}
+	
+	public void setPixels(int[] pixels)
+	{
+		mPixels = pixels;
 	}
 	
 	/**
@@ -92,9 +149,19 @@ public class YUVPixel
 		return mCroppedImgWidth;
 	}
 	
+	public void setImgWidth(int imgWidth)
+	{
+		mCroppedImgWidth = imgWidth;
+	}
+	
 	public int getImgHeight()
 	{
 		return mCroppedImgHeight;
+	}
+	
+	public void setImgHeight(int imgHeight)
+	{
+		mCroppedImgHeight = imgHeight;
 	}
 	
 	public Bitmap renderCroppedGreyscaleBitmap()

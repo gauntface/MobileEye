@@ -28,7 +28,7 @@ public class CameraWrapper
 	
 	public void startPreview(SurfaceHolder holder) throws CameraHardwareException
 	{
-		Log.d(Singleton.TAG, "Camera - startPreview()");
+		Log.v(Singleton.TAG, "Camera - startPreview()");
 		
 		ensureCameraDevice();
 		
@@ -81,7 +81,7 @@ public class CameraWrapper
 	
 	public void stopPreview()
 	{
-		Log.d(Singleton.TAG, "Camera - stopPreview");
+		Log.v(Singleton.TAG, "Camera - stopPreview");
 		
 		if(mPreviewing == true)
 		{
@@ -93,7 +93,7 @@ public class CameraWrapper
 	
 	public void setPreviewDisplay(SurfaceHolder holder)
 	{
-		Log.d(Singleton.TAG, "Camera - setPreviewDisplay");
+		Log.v(Singleton.TAG, "Camera - setPreviewDisplay");
 		
 		try
 		{
@@ -108,7 +108,7 @@ public class CameraWrapper
 	
 	public void closeCamera()
 	{
-		Log.d(Singleton.TAG, "Camera - closeCamera()");
+		Log.v(Singleton.TAG, "Camera - closeCamera()");
 		
 		if(mCamera != null)
 		{   
