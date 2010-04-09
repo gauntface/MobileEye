@@ -304,61 +304,112 @@ public class QuickSegment
 	{
 		int[] newPixels = new int[origPixels.length];
 		
-		int avgGroup0x = 0;
-		int avgGroup0y = 0;
-		int avgGroup1x = 0;
-		int avgGroup1y = 0;
-		int avgGroup2x = 0;
-		int avgGroup2y = 0;
+		//int avgGroup0x = 0;
+		//int avgGroup0y = 0;
+		//int avgGroup1x = 0;
+		//int avgGroup1y = 0;
+		//int avgGroup2x = 0;
+		//int avgGroup2y = 0;
 		
-		int group0Count = 0;
-		int group1Count = 0;
-		int group2Count = 0;
+		//int group0Count = 0;
+		//int group1Count = 0;
+		//int group2Count = 0;
 		
-		for(int i = 0; i < origPixels.length; i++)
+		int pixelRangeMin = ((Number) groupValues.get(0).getArg1()).intValue();
+		int pixelRangeMax = ((Number) groupValues.get(0).getArg2()).intValue();
+		
+		int nextAvailGroupIndex = 0;
+		
+		int currentYOffset = 0;
+		int neighbourAboveOffset = -(imgWidth);
+		
+		ArrayList<RegionGroup> regions= new ArrayList<RegionGroup>();
+		int[] regionGrouping = new int[origPixels.length];
+		
+		for(int y = 0; y < imgHeight; y++)
 		{
-			for(int j = 0; j < groupValues.size(); j++)
+			for(int x = 0; x < imgWidth; x++)
 			{
-				Pair groupValue = groupValues.get(j);
-				//if(pixels[i] >= (groups[j] - GROUPING_VARIATION) && pixels[i] <= (groups[j] + GROUPING_VARIATION))
-				//{
-				if(origPixels[i] >= ((Number)groupValue.getArg1()).intValue() && origPixels[i] < ((Number)groupValue.getArg2()).intValue())
+				int pixelValue = origPixels[currentYOffset + x];
+				if(pixelValue >= pixelRangeMin && pixelValue <= pixelRangeMax)
 				{
-					int xCoord = i % imgWidth;
-					int yCoord = (i - xCoord) / imgWidth;
-					
-					if(j == 0)
+					// The pixel is in the brightest peak range
+					int neighbourGroup = checkForNeighbouringGroup(regionGrouping, currentYOffset, neighbourAboveOffset, x);
+					if(neighbourGroup != -1)
 					{
-						newPixels[i] = GROUP_0_COLOR;
-						avgGroup0x = avgGroup0x + xCoord;
-						avgGroup0y = avgGroup0y + yCoord;
-						group0Count = group0Count + 1;
-						break;
+						// Add to current group
+						regionGrouping[currentYOffset + x] = neighbourGroup;
+						regions.get(neighbourGroup).extendRegion(x, y);
+						
+						// DELETE THIS!!!!!
+						newPixels[currentYOffset + x] = GROUP_0_COLOR;
 					}
-					else if(j == 1)
+					else
 					{
-						newPixels[i] = GROUP_1_COLOR;
-						avgGroup1x = avgGroup1x + xCoord;
-						avgGroup1y = avgGroup1y + yCoord;
-						group1Count = group1Count + 1;
-						break;
-					}
-					else if(j == 2)
-					{
-						newPixels[i] = GROUP_2_COLOR;
-						avgGroup2x = avgGroup2x + xCoord;
-						avgGroup2y = avgGroup2y + yCoord;
-						group2Count = group2Count + 1;
-						break;
+						// New Group
+						regionGrouping[currentYOffset + x] = nextAvailGroupIndex;
+						regions.add(new RegionGroup(x, y, x, y));
+						nextAvailGroupIndex = nextAvailGroupIndex + 1;
+						
+						// DELETE THIS!!!!!
+						newPixels[currentYOffset + x] = GROUP_0_COLOR;
 					}
 				}
-				else if((j+1) == groupValues.size())
+				else
 				{
-					newPixels[i] = GROUP_NO_COLOR;
-					break;
+					regionGrouping[currentYOffset + x] = -1;
+					// DELETE THIS!!!!!
+					newPixels[currentYOffset + x] = GROUP_NO_COLOR;
 				}
 			}
+			
+			currentYOffset = currentYOffset + imgWidth;
+			neighbourAboveOffset = neighbourAboveOffset + imgWidth;
 		}
+		
+		//for(int i = 0; i < origPixels.length; i++)
+		//{
+			//for(int j = 0; j < groupValues.size(); j++)
+			//{
+				//Pair groupValue = groupValues.get(j);
+				
+				//if(origPixels[i] >= ((Number)groupValue.getArg1()).intValue() && origPixels[i] < ((Number)groupValue.getArg2()).intValue())
+				//{
+					//int xCoord = i % imgWidth;
+					//int yCoord = (i - xCoord) / imgWidth;
+					
+					//if(j == 0)
+					//{
+						//newPixels[i] = GROUP_0_COLOR;
+						//avgGroup0x = avgGroup0x + xCoord;
+						//avgGroup0y = avgGroup0y + yCoord;
+						//group0Count = group0Count + 1;
+						//break;
+					//}
+					//else if(j == 1)
+					//{
+						//newPixels[i] = GROUP_1_COLOR;
+						//avgGroup1x = avgGroup1x + xCoord;
+						//avgGroup1y = avgGroup1y + yCoord;
+						//group1Count = group1Count + 1;
+						//break;
+					//}
+					//else if(j == 2)
+					//{
+						//newPixels[i] = GROUP_2_COLOR;
+						//avgGroup2x = avgGroup2x + xCoord;
+						//avgGroup2y = avgGroup2y + yCoord;
+						//group2Count = group2Count + 1;
+						//break;
+					//}
+				//}
+				//else if((j+1) == groupValues.size())
+				//{
+					//newPixels[i] = GROUP_NO_COLOR;
+					//break;
+				//}
+			//}
+		//}
 		
 		ArrayList<Pair> groupCenters = new ArrayList<Pair>();
 		
@@ -384,6 +435,35 @@ public class QuickSegment
 		ImagePackage imgPacket = new ImagePackage(newPixels, imgWidth, imgHeight, groupValues, groupCenters);
 		
 		return imgPacket;
+	}
+
+	private int checkForNeighbouringGroup(int[] regionGrouping,
+			int currentYOffset,
+			int neighbourAboveOffset,
+			int x)
+	{
+		int neighbourAboveIndex = neighbourAboveOffset + x; 
+		if(neighbourAboveIndex >= 0)
+		{
+			int aboveGroup = regionGrouping[neighbourAboveIndex];
+			if(aboveGroup >= 0)
+			{
+				return aboveGroup;
+			}
+		}
+		
+		int xPos = x - 1;
+		if(xPos >= 0)
+		{
+			int neighbourLeftIndex = currentYOffset + xPos;
+			int leftGroup = regionGrouping[neighbourLeftIndex];
+			if(leftGroup >= 0)
+			{
+				return leftGroup;
+			}
+		}
+		
+		return -1;
 	}
 	
 	/**

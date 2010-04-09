@@ -18,7 +18,10 @@ public class AreaExtraction
 	public static ImagePackage getExtraction(ImagePackage imgPackage)
 	{
 		Pair maxGroup = imgPackage.getPixelGroups().get(0);
-		Pair groupCenter = imgPackage.getGroupCenters().get(0);
+		
+		
+		
+		/**Pair groupCenter = imgPackage.getGroupCenters().get(0);
 		
 		int centerX = ((Number)groupCenter.getArg1()).intValue();
 		int centerY = ((Number)groupCenter.getArg2()).intValue();
@@ -59,6 +62,7 @@ public class AreaExtraction
 		}
 		
 		imgPackage.setImgPixels(IPUtility.convert2DArrayTo1DArray(newPixels, mImgWidth, mImgHeight));
+		**/
 		
 		return imgPackage;
 	}

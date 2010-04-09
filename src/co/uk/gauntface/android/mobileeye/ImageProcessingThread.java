@@ -91,17 +91,17 @@ public class ImageProcessingThread extends Thread
 		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
 		ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), mLogHistogram, yuvPixel.getImgWidth(), yuvPixel.getImgHeight());
 		
-		b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+		//b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 		
 		if(mLogHistogram == true)
 		{
-			//b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+			b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 			Utility.saveImageToSDCard(b, "Segment.png");
 		}
 		
 		//imgPackage = AreaExtraction.getExtraction(imgPackage);
 		
-		//b = Utility.renderBitmap(imgPackage.getImgPixels(), b.getWidth(), b.getHeight(), true);
+		b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 		
 		//if(mLogHistogram == true)
 		//{
