@@ -5,23 +5,27 @@ import java.util.ArrayList;
 public class ImagePackage
 {
 	private int[] mImgPixels;
+	private int[] mHistogram;
 	private int mImgWidth;
 	private int mImgHeight;
-	private ArrayList<Pair> mPixelGroups;
-	private ArrayList<Pair> mGroupCenters;
+	private ArrayList<Peak> mPixelGroups;
+	private RegionGroup mRegionGroups;
+	private int[] mRegionGroupPixels;
 	
 	public ImagePackage()
 	{
 		
 	}
 	
-	public ImagePackage(int[] p, int w, int h, ArrayList<Pair> g, ArrayList<Pair> gC)
+	public ImagePackage(int[] p, int[] a, int w, int h, ArrayList<Peak> g, RegionGroup r, int[] rG)
 	{
 		mImgPixels = p;
+		mHistogram = a;
 		mImgWidth = w;
 		mImgHeight = h;
 		mPixelGroups = g;
-		mGroupCenters = gC;
+		mRegionGroups = r;
+		mRegionGroupPixels = rG;
 	}
 	
 	public int[] getImgPixels()
@@ -32,6 +36,16 @@ public class ImagePackage
 	public void setImgPixels(int[] p)
 	{
 		mImgPixels = p;
+	}
+	
+	public int[] getHistogram()
+	{
+		return mHistogram;
+	}
+	
+	public void setHistogram(int[] histogramBuckets)
+	{
+		mHistogram = histogramBuckets;
 	}
 	
 	public int getImgWidth()
@@ -54,23 +68,33 @@ public class ImagePackage
 		mImgHeight = h;
 	}
 	
-	public ArrayList<Pair> getPixelGroups()
+	public ArrayList<Peak> getPixelGroups()
 	{
 		return mPixelGroups;
 	}
 	
-	public void setPixelGroups(ArrayList<Pair> g)
+	public void setPixelGroups(ArrayList<Peak> g)
 	{
 		mPixelGroups = g;
 	}
 	
-	public ArrayList<Pair> getGroupCenters()
+	public RegionGroup getRegionGroup()
 	{
-		return mGroupCenters;
+		return mRegionGroups;
 	}
 	
-	public void setGroupCenters(ArrayList<Pair> gC)
+	public void setRegionGroup(RegionGroup rg)
 	{
-		mGroupCenters = gC;
+		mRegionGroups = rg;
+	}
+	
+	public int[] getRegionGroupPixels()
+	{
+		return mRegionGroupPixels;
+	}
+	
+	public void setRegionGroupPixels(int[] regionGroupPixels)
+	{
+		mRegionGroupPixels = regionGroupPixels;
 	}
 }

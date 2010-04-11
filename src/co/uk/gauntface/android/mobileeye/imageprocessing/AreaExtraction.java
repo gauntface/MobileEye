@@ -8,8 +8,8 @@ import co.uk.gauntface.android.mobileeye.Singleton;
 
 public class AreaExtraction
 {
-	private static int[][] mPixels;
-	private static int[] mCenter;
+	private static int[] mPixels;
+	private static int mCenterPixelIndex;
 	private static int[] mTopLeft;
 	private static int[] mBottomRight;
 	private static int mImgWidth;
@@ -17,24 +17,180 @@ public class AreaExtraction
 	
 	public static ImagePackage getExtraction(ImagePackage imgPackage)
 	{
-		Pair maxGroup = imgPackage.getPixelGroups().get(0);
-		
-		
-		
-		/**Pair groupCenter = imgPackage.getGroupCenters().get(0);
-		
-		int centerX = ((Number)groupCenter.getArg1()).intValue();
-		int centerY = ((Number)groupCenter.getArg2()).intValue();
-		
-		mCenter = new int[]{centerX, centerY};
+		mPixels = imgPackage.getImgPixels();
 		
 		mImgWidth = imgPackage.getImgWidth();
 		mImgHeight = imgPackage.getImgHeight();
 		
-		mPixels = IPUtility.convert1DArrayTo2DArray(imgPackage.getImgPixels(), mImgWidth, imgPackage.getImgHeight());
+		int[] regionPixels = imgPackage.getRegionGroupPixels();
+		RegionGroup regionGroup = imgPackage.getRegionGroup();
 		
-		mTopLeft = new int[]{centerX, centerY};
-		mBottomRight = new int[]{centerX, centerY};
+		int centerPointX = (int) (regionGroup.getTopLeftX() - regionGroup.getBottomRightX()) / 2;
+		int centerPointY = (int) (regionGroup.getTopLeftY() - regionGroup.getBottomRightY()) / 2;
+		mCenterPixelIndex = (centerPointY * mImgWidth) + centerPointX;
+		
+		mTopLeft = new int[]{centerPointX, centerPointY};
+		mBottomRight = new int[]{centerPointX, centerPointY};
+		
+		boolean areaFullyExpanded = false;
+		
+		boolean expandUp = true;
+		boolean expandLeft = true;
+		boolean expandRight = true;
+		boolean expandDown = true;
+		
+		while(areaFullyExpanded == false)
+		{
+			int xSpread = mBottomRight[0] - mTopLeft[0];
+			int ySpread = mBottomRight[1] - mTopLeft[1];
+			//Log.v(Singleton.TAG, "ySpread = " + ySpread);
+			
+			if(expandUp == true)
+			{
+				int tempTopY = mTopLeft[1];
+				if(tempTopY > 0)
+				{
+					// Can move up
+					tempTopY = tempTopY - 1;
+					
+					int newPixelOffset = (tempTopY * mImgWidth) + mTopLeft[0];
+					
+					for(int i = 0; i <= xSpread; i++)
+					{
+						if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
+						{
+							expandUp = false;
+							tempTopY = mTopLeft[1];
+							break;
+						}
+					}
+					
+					if(expandUp == true)
+					{
+						mTopLeft[1] = tempTopY;
+					}
+				}
+				else
+				{
+					expandUp = false;
+				}
+			}
+			
+			if(expandDown == true)
+			{
+				int tempBottomY = mBottomRight[1];
+				if(mBottomRight[1] < (mImgHeight - 1))
+				{
+					// Can move down
+					tempBottomY = tempBottomY + 1;
+					
+					int newPixelOffset = (tempBottomY * mImgWidth) + mTopLeft[0];
+					
+					for(int i = 0; i <= xSpread; i++)
+					{
+						Log.d("mobileeye", "tempBottomY = " + tempBottomY);
+						Log.d("mobileeye", "ImgWidth = " + mImgWidth);
+						Log.d("mobileeye", "mTopLeftX = " + mTopLeft[0]);
+						Log.d("mobileeye", "xSpread = " + xSpread);
+						Log.d("mobileeye", "i = " + i);
+						
+						if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
+						{
+							expandDown = false;
+							tempBottomY = mBottomRight[1];
+							break;
+						}
+					}
+					
+					if(expandDown == true)
+					{
+						mBottomRight[1] = tempBottomY;
+					}
+				}
+				else
+				{
+					expandDown = false;
+				}
+			}
+			
+			if(expandLeft == true)
+			{
+				int tempTopX = mTopLeft[0];
+				if(mTopLeft[0] > 0)
+				{
+					// Can move up
+					tempTopX = tempTopX - 1;
+					
+					int yOffset = (mTopLeft[1] * mImgWidth) + tempTopX;
+					
+					for(int i = 0; i <= ySpread; i++)
+					{
+						if(mPixels[yOffset] != mPixels[mCenterPixelIndex])
+						{
+							expandLeft = false;
+							tempTopX = mTopLeft[0];
+							break;
+						}
+						yOffset = yOffset + mImgWidth;
+					}
+					
+					if(expandLeft == true)
+					{
+						mTopLeft[0] = tempTopX;
+					}
+				}
+				else
+				{
+					expandLeft = false;
+				}
+			}
+			
+			if(expandRight == true)
+			{
+				int tempBottomX = mBottomRight[0];
+				if(mBottomRight[0] < (mImgWidth - 1))
+				{
+					// Can move up
+					tempBottomX = tempBottomX + 1;
+					
+					int yOffset = (mTopLeft[1] * mImgWidth) + tempBottomX;
+					
+					for(int i = 0; i <= ySpread; i++)
+					{
+						if(mPixels[yOffset] != mPixels[mCenterPixelIndex])
+						{
+							tempBottomX = mBottomRight[0];
+							expandRight = false;
+							break;
+						}
+						yOffset = yOffset + mImgWidth;
+					}
+					
+					if(expandRight == true)
+					{
+						mBottomRight[0] = tempBottomX;
+					}
+				}
+				else
+				{
+					expandRight = false;
+				}
+			}
+			
+			//Log.v(Singleton.TAG, "topX = "+mTopLeft[0]+" topY = " + mTopLeft[1]+" bottomX = "+mBottomRight[0]+" bottomY = " + mBottomRight[1]);
+			
+			if(expandUp == false && expandDown == false &&
+					expandLeft == false && expandRight == false)
+			{
+				areaFullyExpanded = false;
+			}
+		}
+		
+		//Pair maxGroup = imgPackage.getPixelGroups().get(0);
+		
+		
+		
+		/**Pair groupCenter = imgPackage.getGroupCenters().get(0);
 		
 		//Log.v(Singleton.TAG, "Center Max Group = ("+mCenter[0]+","+mCenter[1]+")");
 		
@@ -71,22 +227,24 @@ public class AreaExtraction
 	 * Change orientation priority if camera is portrait of landscape
 	 * @return
 	 */
-	private static boolean expandArea()
+	/**private static boolean expandArea()
 	{
 		int xSpread = mBottomRight[0] - mTopLeft[0];
 		int ySpread = mBottomRight[1] - mTopLeft[1];
 		//Log.v(Singleton.TAG, "ySpread = " + ySpread);
 		
 		int tempTopY = mTopLeft[1];
-		if(mTopLeft[1] > 0)
+		if(tempTopY > 0)
 		{
 			// Can move up
 			tempTopY = tempTopY - 1;
 			
 			boolean increase = true;
+			int newPixelOffset = (tempTopY * mImgWidth) + mTopLeft[0];
+			
 			for(int i = 0; i <= xSpread; i++)
 			{
-				if(mPixels[tempTopY][mTopLeft[0] + i] != mPixels[mCenter[0]][mCenter[1]])
+				if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
 				{
 					increase = false;
 					break;
@@ -181,5 +339,5 @@ public class AreaExtraction
 		}
 		
 		return true;
-	}
+	}**/
 }

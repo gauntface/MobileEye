@@ -42,9 +42,9 @@ public class QuickSegment
 		int[] avgPixelBuckets = averageArray(pixelBuckets);
 		
 		Peak[] maxIndices = hillClimb(avgPixelBuckets);
-		ArrayList<Pair> groupValues = groupAndMerge(avgPixelBuckets, maxIndices);
+		ArrayList<Peak> groupValues = groupAndMerge(avgPixelBuckets, maxIndices);
 		
-		ImagePackage imgPkg = generateImagePkg(origPixels, groupValues, imgWidth, imgHeight);
+		ImagePackage imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight);
 		
 		return imgPkg;
 	}
@@ -101,12 +101,12 @@ public class QuickSegment
 	
 	private Peak[] hillClimb(int[] data)
 	{
-		long startTime = System.currentTimeMillis();
+		//long startTime = System.currentTimeMillis();
 		
 		ArrayList<Peak> maxPoints = findHillPeaks(data);
 		
-		long endTime = System.currentTimeMillis();
-		Log.d("mobileeye", "Time taken NEW = " + (endTime - startTime) + " milliseconds");
+		//long endTime = System.currentTimeMillis();
+		//Log.d("mobileeye", "Time taken NEW = " + (endTime - startTime) + " milliseconds");
 		
 		
 		
@@ -257,32 +257,33 @@ public class QuickSegment
 		}
 	}
 	
-	public ArrayList<Pair> groupAndMerge(int[] data, Peak[] maxIndices)
+	public ArrayList<Peak> groupAndMerge(int[] data, Peak[] maxIndices)
 	{
-		ArrayList<Pair> groupValues = new ArrayList<Pair>();
+		ArrayList<Peak> groupValues = new ArrayList<Peak>();
 		for(int i = 0; i < maxIndices.length; i++)
 		{
 			int minGroupValue = maxIndices[i].getMinIndex();
 			int maxGroupValue = maxIndices[i].getMaxIndex();
+			int peakGroupValue = maxIndices[i].getPeakIndex();
 			
 			if(SHOULD_MERGE_GROUPS == true)
 			{
 				for(int j = 0; j < i && j < groupValues.size(); j++)
 				{
-					Pair p = groupValues.get(j);
-					if(minGroupValue < ((Number) p.getArg2()).intValue() && maxGroupValue > ((Number) p.getArg2()).intValue())
+					Peak p = groupValues.get(j);
+					if(minGroupValue < p.getMaxIndex() && maxGroupValue > p.getMaxIndex())
 					{
-						if(minGroupValue > ((Number) p.getArg1()).intValue())
+						if(minGroupValue > p.getMinIndex())
 						{
-							minGroupValue = ((Number) p.getArg1()).intValue();
+							minGroupValue = p.getMinIndex();
 							groupValues.remove(j);
 						}
 					}
-					else if(maxGroupValue > ((Number) p.getArg1()).intValue() && minGroupValue < ((Number) p.getArg1()).intValue())
+					else if(maxGroupValue > p.getMinIndex() && minGroupValue < p.getMinIndex())
 					{
-						if(maxGroupValue < ((Number) p.getArg2()).intValue())
+						if(maxGroupValue < p.getMaxIndex())
 						{
-							maxGroupValue = ((Number) p.getArg2()).intValue();
+							maxGroupValue = p.getMaxIndex();
 							groupValues.remove(j);
 						}
 					}
@@ -292,7 +293,7 @@ public class QuickSegment
 			minGroupValue = minGroupValue * BUCKET_RANGE;
 			maxGroupValue = (maxGroupValue * BUCKET_RANGE) + BUCKET_RANGE;
 
-			Pair p = new Pair(minGroupValue, maxGroupValue);
+			Peak p = new Peak(minGroupValue, maxGroupValue, peakGroupValue);
 			
 			groupValues.add(p);
 		}
@@ -300,7 +301,7 @@ public class QuickSegment
 		return groupValues;
 	}
 	
-	private ImagePackage generateImagePkg(int[] origPixels, ArrayList<Pair> groupValues, int imgWidth, int imgHeight)
+	private ImagePackage generateImagePkg(int[] origPixels, int[] avgPixelBuckets, ArrayList<Peak> groupValues, int imgWidth, int imgHeight)
 	{
 		int[] newPixels = new int[origPixels.length];
 		
@@ -315,8 +316,10 @@ public class QuickSegment
 		//int group1Count = 0;
 		//int group2Count = 0;
 		
-		int pixelRangeMin = ((Number) groupValues.get(0).getArg1()).intValue();
-		int pixelRangeMax = ((Number) groupValues.get(0).getArg2()).intValue();
+		int groupIndex = getMainGroupToExtract(avgPixelBuckets, groupValues);
+		
+		int pixelRangeMin = groupValues.get(groupIndex).getMinIndex();
+		int pixelRangeMax = groupValues.get(groupIndex).getMaxIndex();
 		
 		int nextAvailGroupIndex = 0;
 		
@@ -325,6 +328,8 @@ public class QuickSegment
 		
 		ArrayList<RegionGroup> regions= new ArrayList<RegionGroup>();
 		int[] regionGrouping = new int[origPixels.length];
+		
+		int maxRegionGroup = -1;
 		
 		for(int y = 0; y < imgHeight; y++)
 		{
@@ -347,12 +352,20 @@ public class QuickSegment
 					else
 					{
 						// New Group
+						neighbourGroup = nextAvailGroupIndex;
 						regionGrouping[currentYOffset + x] = nextAvailGroupIndex;
 						regions.add(new RegionGroup(x, y, x, y));
 						nextAvailGroupIndex = nextAvailGroupIndex + 1;
 						
 						// DELETE THIS!!!!!
 						newPixels[currentYOffset + x] = GROUP_0_COLOR;
+					}
+					
+					if(maxRegionGroup == -1 ||
+							regions.get(neighbourGroup).getRegionSize()
+							> regions.get(maxRegionGroup).getRegionSize())
+					{
+						maxRegionGroup = neighbourGroup;
 					}
 				}
 				else
@@ -367,74 +380,36 @@ public class QuickSegment
 			neighbourAboveOffset = neighbourAboveOffset + imgWidth;
 		}
 		
-		//for(int i = 0; i < origPixels.length; i++)
-		//{
-			//for(int j = 0; j < groupValues.size(); j++)
-			//{
-				//Pair groupValue = groupValues.get(j);
-				
-				//if(origPixels[i] >= ((Number)groupValue.getArg1()).intValue() && origPixels[i] < ((Number)groupValue.getArg2()).intValue())
-				//{
-					//int xCoord = i % imgWidth;
-					//int yCoord = (i - xCoord) / imgWidth;
-					
-					//if(j == 0)
-					//{
-						//newPixels[i] = GROUP_0_COLOR;
-						//avgGroup0x = avgGroup0x + xCoord;
-						//avgGroup0y = avgGroup0y + yCoord;
-						//group0Count = group0Count + 1;
-						//break;
-					//}
-					//else if(j == 1)
-					//{
-						//newPixels[i] = GROUP_1_COLOR;
-						//avgGroup1x = avgGroup1x + xCoord;
-						//avgGroup1y = avgGroup1y + yCoord;
-						//group1Count = group1Count + 1;
-						//break;
-					//}
-					//else if(j == 2)
-					//{
-						//newPixels[i] = GROUP_2_COLOR;
-						//avgGroup2x = avgGroup2x + xCoord;
-						//avgGroup2y = avgGroup2y + yCoord;
-						//group2Count = group2Count + 1;
-						//break;
-					//}
-				//}
-				//else if((j+1) == groupValues.size())
-				//{
-					//newPixels[i] = GROUP_NO_COLOR;
-					//break;
-				//}
-			//}
-		//}
-		
-		ArrayList<Pair> groupCenters = new ArrayList<Pair>();
-		
-		/**if(group0Count > 0)
+		if(maxRegionGroup != -1)
 		{
-			int xCoord = avgGroup0x / group0Count;
-			int yCoord = avgGroup0y / group0Count;
-			groupCenters.add(new Pair(xCoord, yCoord));
+			RegionGroup largestRegion = regions.get(maxRegionGroup);
+			
+			ImagePackage imgPacket = new ImagePackage(newPixels, avgPixelBuckets, imgWidth, imgHeight, groupValues, largestRegion, regionGrouping);
+			return imgPacket;
 		}
-		if(group1Count > 0)
+		
+		return null;
+	}
+
+	private int getMainGroupToExtract(int[] avgPixelBuckets, ArrayList<Peak> groupValues)
+	{
+		double maxWeight = -1;
+		int maxIndex = -1;
+		
+		for(int i = 0; i < groupValues.size(); i++)
 		{
-			int xCoord = avgGroup1x / group1Count;
-			int yCoord = avgGroup1y / group1Count;
-			groupCenters.add(new Pair(xCoord, yCoord));
+			int peakIndex = groupValues.get(i).getPeakIndex();
+			double factor = (double) peakIndex / (double) MAX_PIXEL_VALUE;
+			double weight = factor * avgPixelBuckets[peakIndex];
+			
+			if(weight > maxWeight)
+			{
+				maxWeight = weight;
+				maxIndex = i;
+			}
 		}
-		if(group2Count > 0)
-		{
-			int xCoord = avgGroup2x / group2Count;
-			int yCoord = avgGroup2y / group2Count;
-			groupCenters.add(new Pair(xCoord, yCoord));
-		}**/
 		
-		ImagePackage imgPacket = new ImagePackage(newPixels, imgWidth, imgHeight, groupValues, groupCenters);
-		
-		return imgPacket;
+		return maxIndex;
 	}
 
 	private int checkForNeighbouringGroup(int[] regionGrouping,
