@@ -1,0 +1,2 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_height="wrap_content" android:layout_width="fill_parent" android:background="@drawable/list_bg_full"><TextView android:layout_height="wrap_content" android:id="@+id/ListItemTextView" android:textColor="#000000" android:textSize="18dp" android:textStyle="bold" android:padding="10dp" android:layout_width="wrap_content"></TextView>
+</LinearLayout>

@@ -1,8 +1,9 @@
-<LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical">
-	<ListView android:layout_height="wrap_content" android:layout_weight="1" android:id="@+id/BluetoothDeviceListView" android:layout_width="fill_parent"></ListView>
+<LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:background="#ffffff">
+	<ImageView android:layout_height="wrap_content" android:src="@drawable/bt_connect_top_logo" android:layout_width="fill_parent" android:scaleType="center"></ImageView><ListView android:layout_height="wrap_content" android:layout_weight="1" android:id="@+id/BluetoothDeviceListView" android:layout_width="fill_parent" android:cacheColorHint="#ffffff" android:divider="#000000" android:dividerHeight="2px" android:scrollbars="none" android:footerDividersEnabled="false" android:listSelector="#00000000" android:focusable="true" android:focusableInTouchMode="true"></ListView>
 
 	<LinearLayout android:layout_height="wrap_content" android:layout_width="fill_parent">
-		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/BluetoothConnectBtn" android:text="Bluetooth Connect" android:layout_gravity="center" android:layout_weight="1"></Button>
-		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bluetooth Skip" android:layout_weight="1" android:id="@+id/BluetoothSkipBtn"></Button>
+		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/BluetoothConnectBtn" android:text="Bluetooth Connect" android:layout_gravity="center" android:layout_weight="1" android:background="@drawable/btn_full_bg"></Button>
+		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bluetooth Skip" android:layout_weight="1" android:id="@+id/BluetoothSkipBtn" android:background="@drawable/btn_full_bg"></Button>
 	</LinearLayout>
+
 </LinearLayout>

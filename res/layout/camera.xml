@@ -4,7 +4,7 @@
     android:layout_height="fill_parent"
     >
 
-<SurfaceView android:id="@+id/CameraSurfaceView" android:layout_height="fill_parent" android:layout_width="fill_parent"></SurfaceView><ImageView android:id="@+id/ImageProcessedSurfaceView" android:layout_centerInParent="true" android:layout_width="fill_parent" android:layout_height="fill_parent" android:scaleType="fitXY"></ImageView><LinearLayout android:id="@+id/LinearLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_alignParentRight="true"><Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/output_histogram_data" android:id="@+id/OutputHistogramBtn"></Button>
+<SurfaceView android:id="@+id/CameraSurfaceView" android:layout_height="fill_parent" android:layout_width="fill_parent"></SurfaceView><ImageView android:id="@+id/ImageProcessedSurfaceView" android:layout_centerInParent="true" android:layout_width="fill_parent" android:layout_height="fill_parent" android:scaleType="fitXY"></ImageView><LinearLayout android:id="@+id/LinearLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_alignParentRight="true"><Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/output_histogram_data" android:id="@+id/OutputHistogramBtn" android:background="@drawable/btn_full_bg"></Button>
 </LinearLayout>
 
 

@@ -11,6 +11,7 @@ public class ImagePackage
 	private ArrayList<Peak> mPixelGroups;
 	private RegionGroup mRegionGroups;
 	private int[] mRegionGroupPixels;
+	private RegionGroup mExtractionArea;
 	
 	public ImagePackage()
 	{
@@ -26,6 +27,7 @@ public class ImagePackage
 		mPixelGroups = g;
 		mRegionGroups = r;
 		mRegionGroupPixels = rG;
+		mExtractionArea = null;
 	}
 	
 	public int[] getImgPixels()
@@ -96,5 +98,15 @@ public class ImagePackage
 	public void setRegionGroupPixels(int[] regionGroupPixels)
 	{
 		mRegionGroupPixels = regionGroupPixels;
+	}
+	
+	public RegionGroup getExtractionArea()
+	{
+		return mExtractionArea;
+	}
+	
+	public void setExtractionArea(RegionGroup ea)
+	{
+		mExtractionArea = ea;
 	}
 }

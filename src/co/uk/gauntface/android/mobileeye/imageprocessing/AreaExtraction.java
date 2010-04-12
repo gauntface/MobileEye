@@ -1,13 +1,10 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
-import java.util.ArrayList;
-
-import android.util.Log;
-
-import co.uk.gauntface.android.mobileeye.Singleton;
-
 public class AreaExtraction
 {
+	private static final int COLOR_REGION = 255;
+	private static final int NO_COLOR_REGION = -1;
+	
 	private static int[] mPixels;
 	private static int mCenterPixelIndex;
 	private static int[] mTopLeft;
@@ -25,8 +22,8 @@ public class AreaExtraction
 		int[] regionPixels = imgPackage.getRegionGroupPixels();
 		RegionGroup regionGroup = imgPackage.getRegionGroup();
 		
-		int centerPointX = (int) (regionGroup.getTopLeftX() - regionGroup.getBottomRightX()) / 2;
-		int centerPointY = (int) (regionGroup.getTopLeftY() - regionGroup.getBottomRightY()) / 2;
+		int centerPointX = regionGroup.getTopLeftX() + ((int) (regionGroup.getBottomRightX() - regionGroup.getTopLeftX()) / 2);
+		int centerPointY = regionGroup.getTopLeftY() + ((int) (regionGroup.getBottomRightY() - regionGroup.getTopLeftY()) / 2);
 		mCenterPixelIndex = (centerPointY * mImgWidth) + centerPointX;
 		
 		mTopLeft = new int[]{centerPointX, centerPointY};
@@ -48,6 +45,7 @@ public class AreaExtraction
 			if(expandUp == true)
 			{
 				int tempTopY = mTopLeft[1];
+				
 				if(tempTopY > 0)
 				{
 					// Can move up
@@ -88,12 +86,6 @@ public class AreaExtraction
 					
 					for(int i = 0; i <= xSpread; i++)
 					{
-						Log.d("mobileeye", "tempBottomY = " + tempBottomY);
-						Log.d("mobileeye", "ImgWidth = " + mImgWidth);
-						Log.d("mobileeye", "mTopLeftX = " + mTopLeft[0]);
-						Log.d("mobileeye", "xSpread = " + xSpread);
-						Log.d("mobileeye", "i = " + i);
-						
 						if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
 						{
 							expandDown = false;
@@ -177,167 +169,36 @@ public class AreaExtraction
 				}
 			}
 			
-			//Log.v(Singleton.TAG, "topX = "+mTopLeft[0]+" topY = " + mTopLeft[1]+" bottomX = "+mBottomRight[0]+" bottomY = " + mBottomRight[1]);
-			
 			if(expandUp == false && expandDown == false &&
 					expandLeft == false && expandRight == false)
 			{
-				areaFullyExpanded = false;
+				areaFullyExpanded = true;
 			}
 		}
 		
 		//Pair maxGroup = imgPackage.getPixelGroups().get(0);
+		int[] areaPixels = new int[regionPixels.length];
 		
-		
-		
-		/**Pair groupCenter = imgPackage.getGroupCenters().get(0);
-		
-		//Log.v(Singleton.TAG, "Center Max Group = ("+mCenter[0]+","+mCenter[1]+")");
-		
-		boolean run = true;
-		while(run)
+		int yOffset  = 0;
+		for(int y = 0; y < mImgHeight; y++)
 		{
-			run = expandArea();
-		}
-		
-		int[][] newPixels = new int[mImgHeight][mImgWidth];
-		
-		for(int i = 0; i < mImgHeight; i++)
-		{
-			for(int j = 0; j < mImgWidth; j++)
+			for(int x = 0; x < mImgWidth; x++)
 			{
-				if(i >= mTopLeft[1] && i < mBottomRight[1] && j >= mTopLeft[0] && j < mBottomRight[0])
+				if(y >= mTopLeft[1] && y <= mBottomRight[1] && x >= mTopLeft[0] && x <= mBottomRight[0])
 				{
-					newPixels[i][j] = 255;
+					areaPixels[yOffset+x] = COLOR_REGION;
 				}
 				else
 				{
-					newPixels[i][j] = -1;
+					areaPixels[yOffset+x] = NO_COLOR_REGION;
 				}
 			}
+			yOffset = yOffset + mImgWidth;
 		}
 		
-		imgPackage.setImgPixels(IPUtility.convert2DArrayTo1DArray(newPixels, mImgWidth, mImgHeight));
-		**/
+		imgPackage.setImgPixels(areaPixels);
+		imgPackage.setExtractionArea(new RegionGroup(mTopLeft[0], mTopLeft[1], mBottomRight[0], mBottomRight[1]));
 		
 		return imgPackage;
 	}
-	
-	/**
-	 * Change orientation priority if camera is portrait of landscape
-	 * @return
-	 */
-	/**private static boolean expandArea()
-	{
-		int xSpread = mBottomRight[0] - mTopLeft[0];
-		int ySpread = mBottomRight[1] - mTopLeft[1];
-		//Log.v(Singleton.TAG, "ySpread = " + ySpread);
-		
-		int tempTopY = mTopLeft[1];
-		if(tempTopY > 0)
-		{
-			// Can move up
-			tempTopY = tempTopY - 1;
-			
-			boolean increase = true;
-			int newPixelOffset = (tempTopY * mImgWidth) + mTopLeft[0];
-			
-			for(int i = 0; i <= xSpread; i++)
-			{
-				if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
-				{
-					increase = false;
-					break;
-				}
-			}
-			
-			if(increase == false)
-			{
-				tempTopY = mTopLeft[1];
-			}
-		}
-		
-		int tempBottomY = mBottomRight[1];
-		if(mBottomRight[1] < (mImgHeight - 1))
-		{
-			// Can move down
-			tempBottomY = tempBottomY + 1;
-			
-			boolean increase = true;
-			for(int i = 0; i <= xSpread; i++)
-			{
-				if(mPixels[tempBottomY][mTopLeft[0] + i] != mPixels[mCenter[0]][mCenter[1]])
-				{
-					increase = false;
-					break;
-				}
-			}
-			
-			if(increase == false)
-			{
-				tempBottomY = mBottomRight[1];
-			}
-		}
-		
-		int tempTopX = mTopLeft[0];
-		if(mTopLeft[0] > 0)
-		{
-			// Can move up
-			tempTopX = tempTopX - 1;
-			
-			boolean increase = true;
-			for(int i = 0; i <= ySpread; i++)
-			{
-				if(mPixels[mTopLeft[1] + i][tempTopX] != mPixels[mCenter[0]][mCenter[1]])
-				{
-					increase = false;
-					break;
-				}
-			}
-			
-			if(increase == false)
-			{
-				tempTopX = mTopLeft[0];
-			}
-		}
-		
-		int tempBottomX = mBottomRight[0];
-		if(mBottomRight[0] < (mImgWidth - 1))
-		{
-			// Can move up
-			tempBottomX = tempBottomX + 1;
-			
-			boolean increase = true;
-			for(int i = 0; i <= ySpread; i++)
-			{
-				if(mPixels[mTopLeft[1] + i][tempBottomX] != mPixels[mCenter[0]][mCenter[1]])
-				{
-					increase = false;
-					break;
-				}
-			}
-			
-			if(increase == false)
-			{
-				tempBottomX = mBottomRight[0];
-			}
-		}
-		
-		//Log.v(Singleton.TAG, "topX = "+mTopLeft[0]+" topY = " + mTopLeft[1]+" bottomX = "+mBottomRight[0]+" bottomY = " + mBottomRight[1]);
-		
-		if(tempTopX == mTopLeft[0] && tempTopY == mTopLeft[1] &&
-				tempBottomX == mBottomRight[0] && tempBottomY == mBottomRight[1])
-		{
-			return false;
-		}
-		else
-		{
-			mTopLeft[0] = tempTopX;
-			mTopLeft[1] = tempTopY;
-			mBottomRight[0] = tempBottomX;
-			mBottomRight[1] = tempBottomY;
-		}
-		
-		return true;
-	}**/
 }

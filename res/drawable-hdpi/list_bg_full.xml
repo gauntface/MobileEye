@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+	<item android:state_pressed="true" android:drawable="@drawable/list_bg_focused"></item>
+	<item android:state_selected="true" android:drawable="@drawable/list_bg_focused"></item>
+	<item android:state_focused="true" android:drawable="@drawable/list_bg_focused"></item>
+	<item android:drawable="@drawable/list_bg_std"></item>
+</selector>

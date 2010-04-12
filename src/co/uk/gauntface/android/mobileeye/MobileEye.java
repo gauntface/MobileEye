@@ -3,6 +3,7 @@ package co.uk.gauntface.android.mobileeye;
 import java.util.ArrayList;
 
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
+import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothListAdapter;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -27,7 +28,7 @@ public class MobileEye extends Activity
 {
 	private BluetoothAdapter mBluetoothAdapter;
 	private ListView mListView;
-	private ArrayAdapter mArrayAdapter;
+	private BluetoothListAdapter mListAdapter;
 	private ArrayList<BluetoothDevice> mBluetoothDevices;
 	private Handler mHandler;
 	private BluetoothConnectionThread mConnectThread;
@@ -52,7 +53,7 @@ public class MobileEye extends Activity
 	            
 	            Log.v("mobileeye", "Name: "+device.getName() + " Address: " + device.getAddress());
 	            
-	            mArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+	            mListAdapter.add(device.getName() + "\n" + device.getAddress());
 	            mBluetoothDevices.add(device);
 	            mListView.invalidateViews();
 	        }
@@ -181,7 +182,7 @@ public class MobileEye extends Activity
 			{
 				if(mBluetoothAdapter != null)
 				{
-					mArrayAdapter.clear();
+					mListAdapter.clear();
 					mBluetoothDevices.clear();
 					
 					if(mBluetoothAdapter.isEnabled() == true)
@@ -207,11 +208,11 @@ public class MobileEye extends Activity
 			}
 		});
     	
-    	mArrayAdapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1);
+    	mListAdapter = new BluetoothListAdapter(getApplicationContext());
     	mBluetoothDevices = new ArrayList<BluetoothDevice>();
     	
     	mListView = (ListView) findViewById(R.id.BluetoothDeviceListView);
-    	mListView.setAdapter(mArrayAdapter);
+    	mListView.setAdapter(mListAdapter);
     	
     	mListView.setOnItemLongClickListener(new OnItemLongClickListener(){
 
