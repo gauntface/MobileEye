@@ -9,6 +9,8 @@ import co.uk.gauntface.android.mobileeye.Singleton;
 
 public class QuickSegment
 {
+	private double mAveragePixelValue = 0;
+	
 	private int MAX_PIXEL_VALUE = 255;
 	private int BUCKET_RANGE = 4;
 	
@@ -44,7 +46,16 @@ public class QuickSegment
 		Peak[] maxIndices = hillClimb(avgPixelBuckets);
 		ArrayList<Peak> groupValues = groupAndMerge(avgPixelBuckets, maxIndices);
 		
-		ImagePackage imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight);
+		ImagePackage imgPkg = null;
+		if(Singleton.useExistingArea(mAveragePixelValue) == null)
+		{
+			imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
+		}
+		else
+		{
+			Log.d("mobileeye", "We have found a consistant projection area!!!!!");
+			imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
+		}
 		
 		return imgPkg;
 	}
@@ -55,16 +66,20 @@ public class QuickSegment
 		 * MAX_PIXEL_VALUE since 0 is a pixel value
 		 * i.e. 0 - 255 is 256 values
 		 */
+		mAveragePixelValue = 0;
 		int[] pixelBuckets = new int[(int) Math.floor((MAX_PIXEL_VALUE + 1) / BUCKET_RANGE)];
 
 		for(int i = 0; i < pixels.length; i++)
 		{
 			int pixelValue = pixels[i];
+			mAveragePixelValue = mAveragePixelValue + pixelValue;
 			int remainder = pixelValue % BUCKET_RANGE;
 			int bucketIndex = (pixelValue - remainder) / BUCKET_RANGE;
 			
 			pixelBuckets[bucketIndex] = pixelBuckets[bucketIndex] + 1;
 		}
+		
+		mAveragePixelValue = mAveragePixelValue / pixels.length;
 		
 		return pixelBuckets;
 	}
@@ -301,20 +316,9 @@ public class QuickSegment
 		return groupValues;
 	}
 	
-	private ImagePackage generateImagePkg(int[] origPixels, int[] avgPixelBuckets, ArrayList<Peak> groupValues, int imgWidth, int imgHeight)
+	private ImagePackage generateImagePkg(int[] origPixels, int[] avgPixelBuckets, ArrayList<Peak> groupValues, int imgWidth, int imgHeight, double averagePixel)
 	{
 		int[] newPixels = new int[origPixels.length];
-		
-		//int avgGroup0x = 0;
-		//int avgGroup0y = 0;
-		//int avgGroup1x = 0;
-		//int avgGroup1y = 0;
-		//int avgGroup2x = 0;
-		//int avgGroup2y = 0;
-		
-		//int group0Count = 0;
-		//int group1Count = 0;
-		//int group2Count = 0;
 		
 		int groupIndex = getMainGroupToExtract(avgPixelBuckets, groupValues);
 		
@@ -384,7 +388,7 @@ public class QuickSegment
 		{
 			RegionGroup largestRegion = regions.get(maxRegionGroup);
 			
-			ImagePackage imgPacket = new ImagePackage(newPixels, avgPixelBuckets, imgWidth, imgHeight, groupValues, largestRegion, regionGrouping);
+			ImagePackage imgPacket = new ImagePackage(newPixels, avgPixelBuckets, imgWidth, imgHeight, groupValues, largestRegion, regionGrouping, averagePixel);
 			return imgPacket;
 		}
 		

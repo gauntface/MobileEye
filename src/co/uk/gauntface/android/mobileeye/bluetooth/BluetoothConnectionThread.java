@@ -18,6 +18,8 @@ import android.util.Log;
 
 public class BluetoothConnectionThread extends Thread
 {
+	public static final int BLUETOOTH_CONNECTION_LOST = 50;
+	
 	private final BluetoothDevice mBluetoothDevice;
 	private final BluetoothSocket mBluetoothSocket;
 	
@@ -167,7 +169,7 @@ public class BluetoothConnectionThread extends Thread
     		{
     			Log.v("mobileeye", "IOException occured");
             	Message errorMsg = Message.obtain();
-            	errorMsg.arg1 = CameraActivity.BLUETOOTH_CONNECTION_LOST;
+            	errorMsg.arg1 = BLUETOOTH_CONNECTION_LOST;
                 synchronized(mHandler)
             	{
         			mHandler.sendMessage(errorMsg);

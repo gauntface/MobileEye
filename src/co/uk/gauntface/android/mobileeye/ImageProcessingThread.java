@@ -10,14 +10,18 @@ import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegmentFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.RegionGroup;
 import co.uk.gauntface.android.mobileeye.imageprocessing.Utility;
 import co.uk.gauntface.android.mobileeye.imageprocessing.YUVPixel;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Message;
+import android.speech.tts.TextToSpeech;
 import android.text.format.Time;
 
 public class ImageProcessingThread extends Thread
 {
+	private double ROTATE_LEFT_RIGHT_MAX = 20.66;
+	
 	private Size mImageSize;
 	private byte[] mData;
 	private boolean mLogData;
@@ -57,11 +61,51 @@ public class ImageProcessingThread extends Thread
 		Message msg = CameraWrapper.mHandler.obtainMessage();
 		msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
 		
-		Bundle data = new Bundle();
-		
-		msg.setData(data);
-		
 		CameraWrapper.mHandler.dispatchMessage(msg);
+		
+		if(imgPackage != null)
+		{
+			if(imgPackage.stableArea() == true)
+			{
+				RegionGroup extractionArea = imgPackage.getExtractionArea();
+				
+				int centerX = extractionArea.getTopLeftX() +
+					((extractionArea.getBottomRightX() - extractionArea.getTopLeftX()) / 2);
+				int centerY = extractionArea.getTopLeftY() +
+					((extractionArea.getBottomRightY() - extractionArea.getTopLeftY()) / 2);
+				
+				double rLeftRight = 0;
+				double rUpDown = 0;
+				
+				double halfImgWidth = imgPackage.getImgWidth() / 2.0;
+				
+				double relativeX = centerX - halfImgWidth;
+				relativeX= relativeX / halfImgWidth;
+				
+				double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
+				
+				rotateLeftRight = rotateLeftRight * 10;
+				int temp = (int) rotateLeftRight;
+				rotateLeftRight = ((double) temp) / 10;
+				
+				msg = CameraWrapper.mHandler.obtainMessage();
+				msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
+				
+				Bundle data = new Bundle();
+				data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
+				data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
+				
+				msg.setData(data);
+				
+				CameraWrapper.mHandler.dispatchMessage(msg);
+			}
+			else
+			{
+				RegionGroup extractionArea = imgPackage.getExtractionArea();
+				double avgPixelValue = imgPackage.getAveragePixelValue();
+				Singleton.setLastIterationRegionGroup(extractionArea, avgPixelValue);
+			}
+		}
 	}
 	
 	private void logData(YUVPixel yuvPixel, ImagePackage imgPackage)

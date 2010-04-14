@@ -12,13 +12,14 @@ public class ImagePackage
 	private RegionGroup mRegionGroups;
 	private int[] mRegionGroupPixels;
 	private RegionGroup mExtractionArea;
+	private double mAveragePixelValue;
 	
 	public ImagePackage()
 	{
 		
 	}
 	
-	public ImagePackage(int[] p, int[] a, int w, int h, ArrayList<Peak> g, RegionGroup r, int[] rG)
+	public ImagePackage(int[] p, int[] a, int w, int h, ArrayList<Peak> g, RegionGroup r, int[] rG, double aPV)
 	{
 		mImgPixels = p;
 		mHistogram = a;
@@ -28,6 +29,7 @@ public class ImagePackage
 		mRegionGroups = r;
 		mRegionGroupPixels = rG;
 		mExtractionArea = null;
+		mAveragePixelValue = aPV;
 	}
 	
 	public int[] getImgPixels()
@@ -108,5 +110,20 @@ public class ImagePackage
 	public void setExtractionArea(RegionGroup ea)
 	{
 		mExtractionArea = ea;
+	}
+	
+	public double getAveragePixelValue()
+	{
+		return mAveragePixelValue;
+	}
+	
+	public void setAveragePixelValue(double a)
+	{
+		mAveragePixelValue = a;
+	}
+	
+	public boolean stableArea()
+	{
+		return false;
 	}
 }

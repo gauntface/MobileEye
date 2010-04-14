@@ -1,11 +1,17 @@
 package co.uk.gauntface.android.mobileeye;
 
+import java.util.HashMap;
+import java.util.Locale;
+
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.OnInitListener;
+import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -14,6 +20,7 @@ import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 public class CameraActivity extends Activity implements Callback
 {
@@ -28,7 +35,13 @@ public class CameraActivity extends Activity implements Callback
 	
 	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
 	public static final int BLUETOOTH_STREAMS_INIT = 3;
-	public static final int BLUETOOTH_CONNECTION_LOST = 4;
+	
+	public static final int ROTATE_PROJECTOR_VIEW = 4;
+	
+	public static final String ROTATE_LEFT_RIGHT_KEY = "RotateLeftRightKey";
+	public static final String ROTATE_UP_DOWN_KEY = "RotateUpDownKey";
+	
+	private static final int TEXT_TO_SPEECH_REQ_CODE = 0;
 	
 	private SurfaceView mSurfaceView;
 	private ImageView mImageProcessedSurfaceView;
@@ -40,6 +53,11 @@ public class CameraActivity extends Activity implements Callback
 	
 	private BluetoothConnectionThread mBluetoothConnection;
 	
+	private boolean mHasTextToSpeech;
+	private TextToSpeech mTextToSpeech;
+	private final static String UTTERANCE_ID = "UtteranceID";
+	private boolean mTextToSpeechIsFree;
+	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState)
     {
@@ -47,6 +65,42 @@ public class CameraActivity extends Activity implements Callback
         setContentView(R.layout.camera);
         
         initActivity();
+    }
+    
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+    	if(requestCode == TEXT_TO_SPEECH_REQ_CODE)
+    	{
+    		if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS)
+    		{
+    			if(mTextToSpeech == null)
+    			{
+    				mTextToSpeech = new TextToSpeech(getApplicationContext(), new OnInitListener() {
+    					
+    					public void onInit(int status)
+    					{
+    						// On Completion (or Failure) of initialisation
+    						if(status == TextToSpeech.SUCCESS)
+    						{
+    							mHasTextToSpeech = true;
+    						}
+    						else
+    						{
+    							
+    						}
+    					}
+    				});
+    				
+    				mTextToSpeech.setLanguage(Locale.UK);
+    			}
+            }
+    		else
+    		{
+                Intent installIntent = new Intent();
+                installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                startActivity(installIntent);
+            }
+    	}
     }
     
     @Override
@@ -80,14 +134,20 @@ public class CameraActivity extends Activity implements Callback
     @Override
     protected void onPause()
     {
+    	super.onPause();
+    	
     	Log.v(Singleton.TAG, "MobileEye - onPause");
     	
         mCamera.stopPreview();
         
         // Close the camera now because other activities may need to use it.
         mCamera.closeCamera();
-
-        super.onPause();
+        
+        if(mHasTextToSpeech == true)
+    	{
+    		mTextToSpeech.shutdown();
+    		mHasTextToSpeech = false;
+    	}
     }
     
     protected void onStop()
@@ -98,6 +158,12 @@ public class CameraActivity extends Activity implements Callback
     	{
     		mBluetoothConnection.cancel();
     	}
+    	
+    	if(mHasTextToSpeech == true)
+    	{
+    		mTextToSpeech.shutdown();
+    		mHasTextToSpeech = false;
+    	}
     }
     
     protected void onDestroy()
@@ -107,6 +173,12 @@ public class CameraActivity extends Activity implements Callback
     	if(mBluetoothConnection != null)
     	{
     		mBluetoothConnection.cancel();
+    	}
+    	
+    	if(mHasTextToSpeech == true)
+    	{
+    		mTextToSpeech.shutdown();
+    		mHasTextToSpeech = false;
     	}
     }
     
@@ -145,16 +217,71 @@ public class CameraActivity extends Activity implements Callback
     					
     				});
     			}
-    			else if(msg.arg1 == BLUETOOTH_CONNECTION_LOST)
+    			else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
     			{
     				Intent intent = new Intent(getApplicationContext(), MobileEye.class);
     				startActivity(intent);
     				
     				finish();
     			}
+    			else if(msg.arg1 == ROTATE_PROJECTOR_VIEW)
+    			{		
+    				if(mHasTextToSpeech == false)
+    				{
+    					Intent checkIntent = new Intent();
+    					checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+    					startActivityForResult(checkIntent, TEXT_TO_SPEECH_REQ_CODE);
+    				}
+    				else
+    				{
+    					if(mTextToSpeechIsFree == true)
+    	    			{
+    	    				mTextToSpeechIsFree = false;
+    	    				Log.v("mobileeye", "Rotate porjector view");
+    	    				double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
+    	    				double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
+    	    				
+    	    				Log.d("mobileeye", "rLR - " + rLeftRight);
+    	    				
+    	    				String s;
+    					
+    	    				if(rLeftRight < 0)
+    	    				{
+    	    					s = "Rotate left by "+Math.abs(rLeftRight)+" degrees";
+    	    				}
+    	    				else if(rLeftRight > 0)
+    	    				{
+    	    					s = "Rotate right by "+rLeftRight+" degrees";
+    	    				}
+    	    				else
+    	    				{
+    	    					s = "Rotate to 0 degrees";
+    	    				}
+    	    				
+    	    				mTextToSpeech.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
+								
+								public void onUtteranceCompleted(String utteranceId)
+								{
+									Log.d("mobileeye", "Utterance Complete ID - " + utteranceId);
+								    if(utteranceId.equals(UTTERANCE_ID))
+								    {
+								    	Log.d("mobileeye", "TextToSpeechIsFree = true");
+								    	mTextToSpeechIsFree = true;
+								    }
+								}
+							});
+    	    				HashMap<String, String> hashParams = new HashMap();
+    	    				hashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, UTTERANCE_ID);
+    	    				mTextToSpeech.speak(s, TextToSpeech.QUEUE_FLUSH, hashParams);
+    	    			}
+    				}
+    			}
     		}
     		
     	};
+    	
+    	mHasTextToSpeech = false;
+    	mTextToSpeechIsFree = true;
     	
     	mBluetoothConnection = Singleton.getBluetoothConnection();
     	if(mBluetoothConnection != null)

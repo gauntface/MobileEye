@@ -161,12 +161,22 @@ public class MobileEye extends Activity
     			}
     			else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
     			{
+    				Log.v("mobileeye", "Confirming bluetooth connection with computer");
     				String s = new String("<ConnectionConfirm></ConnectionConfirm>");
     				mConnectThread.write(s.getBytes());
     			}
     			else if(msg.arg1 == MobileEye.BLUETOOTH_CONNECT_CONFIRMED)
     			{
+    				Log.v("mobileeye", "Connection confirmed, now launching camera");
     				startCameraActivity(mConnectThread);
+    			}
+    			else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
+    			{
+    				Toast t = Toast.makeText(getApplicationContext(),
+    						"Bluetooth Connection has been lost",
+    						Toast.LENGTH_LONG);
+    				
+    				t.show();
     			}
     		}
     		
