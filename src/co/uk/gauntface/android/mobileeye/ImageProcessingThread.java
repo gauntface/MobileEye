@@ -39,71 +39,82 @@ public class ImageProcessingThread extends Thread
 		
 		Bitmap b = null;
 		
-		YUVPixel yuvPixel = new YUVPixel(mData, mImageSize.width, mImageSize.height, 0, 0, mImageSize.width, mImageSize.height, 4);
+		YUVPixel yuvPixel = new YUVPixel(mData, mImageSize.width, mImageSize.height, 0, 0, mImageSize.width, mImageSize.height, 3);
 		
-		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
-		ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), mLogData, yuvPixel.getImgWidth(), yuvPixel.getImgHeight());
-		
-		if(imgPackage != null)
+		if(Singleton.getApplicationState() == Singleton.STATE_FINDING_AREA)
 		{
-			imgPackage = AreaExtraction.getExtraction(imgPackage);
+			QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
+			ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), 
+					mLogData,
+					yuvPixel.getImgWidth(),
+					yuvPixel.getImgHeight(),
+					yuvPixel.getAveragePixelValue());
 			
-			b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
-		}
-		
-		if(mLogData == true)
-		{
-			logData(yuvPixel, imgPackage);
-		}
-		
-		Singleton.updateImageView = b;
-		
-		Message msg = CameraWrapper.mHandler.obtainMessage();
-		msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
-		
-		CameraWrapper.mHandler.dispatchMessage(msg);
-		
-		if(imgPackage != null)
-		{
-			if(imgPackage.stableArea() == true)
+			if(imgPackage != null)
 			{
 				RegionGroup extractionArea = imgPackage.getExtractionArea();
+				imgPackage = AreaExtraction.getExtraction(imgPackage);
+				if(extractionArea != null)
+				{
+					// Using the previous iterations extraction area
+					int centerX = extractionArea.getTopLeftX() +
+						((extractionArea.getBottomRightX() - extractionArea.getTopLeftX()) / 2);
+					int centerY = extractionArea.getTopLeftY() +
+						((extractionArea.getBottomRightY() - extractionArea.getTopLeftY()) / 2);
+					
+					double rLeftRight = 0;
+					double rUpDown = 0;
+					
+					double halfImgWidth = imgPackage.getImgWidth() / 2.0;
+					
+					double relativeX = centerX - halfImgWidth;
+					relativeX= relativeX / halfImgWidth;
+					
+					double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
+					
+					rotateLeftRight = rotateLeftRight * 10;
+					int temp = (int) rotateLeftRight;
+					rotateLeftRight = ((double) temp) / 10;
+					
+					Message msg = CameraWrapper.mHandler.obtainMessage();
+					msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
+					
+					Bundle data = new Bundle();
+					data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
+					data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
+					
+					msg.setData(data);
+					
+					CameraWrapper.mHandler.dispatchMessage(msg);
+				}
+				else
+				{	
+					extractionArea = imgPackage.getExtractionArea();
+					double avgPixelValue = imgPackage.getAveragePixelValue();
+					
+					Singleton.setLastIterationRegionGroup(extractionArea, avgPixelValue);
+				}
 				
-				int centerX = extractionArea.getTopLeftX() +
-					((extractionArea.getBottomRightX() - extractionArea.getTopLeftX()) / 2);
-				int centerY = extractionArea.getTopLeftY() +
-					((extractionArea.getBottomRightY() - extractionArea.getTopLeftY()) / 2);
+				b = Utility.renderBitmap(imgPackage.getImgPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 				
-				double rLeftRight = 0;
-				double rUpDown = 0;
+				if(mLogData == true)
+				{
+					logData(yuvPixel, imgPackage);
+				}
 				
-				double halfImgWidth = imgPackage.getImgWidth() / 2.0;
+				Singleton.updateImageView = b;
 				
-				double relativeX = centerX - halfImgWidth;
-				relativeX= relativeX / halfImgWidth;
-				
-				double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
-				
-				rotateLeftRight = rotateLeftRight * 10;
-				int temp = (int) rotateLeftRight;
-				rotateLeftRight = ((double) temp) / 10;
-				
-				msg = CameraWrapper.mHandler.obtainMessage();
-				msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
-				
-				Bundle data = new Bundle();
-				data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
-				data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
-				
-				msg.setData(data);
+				Message msg = CameraWrapper.mHandler.obtainMessage();
+				msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
 				
 				CameraWrapper.mHandler.dispatchMessage(msg);
 			}
-			else
+		}
+		else if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
+		{
+			if(Singleton.hasCameraViewChanged(yuvPixel.getAveragePixelValue()) == true)
 			{
-				RegionGroup extractionArea = imgPackage.getExtractionArea();
-				double avgPixelValue = imgPackage.getAveragePixelValue();
-				Singleton.setLastIterationRegionGroup(extractionArea, avgPixelValue);
+				Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
 			}
 		}
 	}

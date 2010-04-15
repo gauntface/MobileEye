@@ -13,6 +13,7 @@ public class YUVPixel
 	private int mCroppedImgWidth;
 	private int mCroppedImgHeight;
 	private int mScaleDownFactor;
+	private double mAveragePixelValue;
 	
 	public YUVPixel(byte[] data, int imgWidth, int imgHeight,
 			int leftOffset, int topOffset,
@@ -27,6 +28,7 @@ public class YUVPixel
 		mCroppedImgWidth = croppedWidth;
 		mCroppedImgHeight = croppedHeight;
 		mScaleDownFactor = scaleDownFactor;
+		mAveragePixelValue = 0;
 		
 		if (mLeftOffset + mCroppedImgWidth > mImgWidth 
 				|| mTopOffset + mCroppedImgHeight > mImgHeight) {
@@ -34,42 +36,7 @@ public class YUVPixel
 		}
 		
 		createPixels();
-		
-		//convertToPixels();
 	}
-	
-	/**int origImgWidth = yuvPixel.getImgWidth();
-	int origImgHeight = yuvPixel.getImgHeight();
-	
-	int targetWidth = origImgWidth / scaleDownFactor;
-	int targetHeight = origImgHeight / scaleDownFactor;
-	
-	int xRatio = origImgWidth / targetWidth;
-	int yRatio = origImgHeight / targetHeight;
-	
-	int[] pixels = yuvPixel.getPixels();
-	int[] newPixels = new int[targetWidth * targetHeight];
-	
-	int yNewOffset = 0;
-	int yOrigImgIndex = 0;
-
-	for(int y = 0; y < targetHeight; y++)
-	{
-		int xOrigImgIndex = 0;
-		for(int x = 0; x < targetWidth; x++)
-		{
-			newPixels[yNewOffset + x] = pixels[(yOrigImgIndex * origImgWidth) + xOrigImgIndex];
-			
-			xOrigImgIndex = xOrigImgIndex + xRatio;
-		}
-		
-		yNewOffset = yNewOffset + targetWidth;
-		yOrigImgIndex = yOrigImgIndex + yRatio;
-	}
-	
-	yuvPixel.setPixels(newPixels);
-	yuvPixel.setImgWidth(targetWidth);
-	yuvPixel.setImgHeight(targetHeight);**/
 	
 	private void createPixels()
 	{
@@ -79,7 +46,9 @@ public class YUVPixel
 		int targetWidth = mCroppedImgWidth / mScaleDownFactor;
 		int targetHeight = mCroppedImgHeight / mScaleDownFactor;
 		
-		mPixels = new int[targetWidth * targetHeight];
+		int noOfPixels = targetWidth * targetHeight;
+		
+		mPixels = new int[noOfPixels];
 		
 		int yNewOffset = 0;
 		int yOrigImgIndex = mTopOffset * mImgWidth + mLeftOffset;
@@ -95,6 +64,8 @@ public class YUVPixel
 				mPixels[yNewOffset + x] = greyPixel;
 				
 				xOrigImgIndex = xOrigImgIndex + xRatio;
+				
+				mAveragePixelValue = mAveragePixelValue + greyPixel;
 			}
 			
 			yNewOffset = yNewOffset + targetWidth;
@@ -103,40 +74,13 @@ public class YUVPixel
 		
 		mCroppedImgWidth = targetWidth;
 		mCroppedImgHeight = targetHeight;
+		
+		mAveragePixelValue = mAveragePixelValue / noOfPixels;
 	}
 	
 	public void setPixels(int[] pixels)
 	{
 		mPixels = pixels;
-	}
-	
-	/**
-	 * int[] pixels - a single array of pixel values (0 - 255?)
-	 * byte[] yuv - just a copy of the data
-	 * int inputOffset - the position in the 1D array of pixels
-	 * 
-	 * int grey - By ANDing yuv value with 0xff == 0b11111111 you remove negative values of yuv and make it 0 - 255
-	 * pixels[Assignment] :
-	 * 			0xXX000000 Alpha value of pixels - allows ghosting effect
-	 * 			0x00010101 NOTE: This is hex NOT decimal
-	 * 			grey * 0x00010101 - this is simply setting the grey value to Red, Green, Blue Color components
-	 * @return
-	 */
-	private void convertToPixels()
-	{
-		/**mPixels = new long[mCroppedImgWidth * mCroppedImgHeight];
-	    int inputOffset = mTopOffset * mImgWidth + mLeftOffset;
-
-	    for (int y = 0; y < mCroppedImgHeight; y++)
-	    {
-	    	int outputOffset = y * mCroppedImgWidth;
-	    	for (int x = 0; x < mCroppedImgWidth; x++)
-	    	{
-	    		int grey = mData[inputOffset + x] & 0xff;
-	    		mPixels[outputOffset + x] = 0xff000000 | (grey * 0x00010101);
-	    	}
-	    	inputOffset = inputOffset + mImgWidth;
-	    }**/
 	}
 	
 	public int[] getPixels()
@@ -164,11 +108,8 @@ public class YUVPixel
 		mCroppedImgHeight = imgHeight;
 	}
 	
-	public Bitmap renderCroppedGreyscaleBitmap()
+	public double getAveragePixelValue()
 	{
-	    //Bitmap bitmap = Bitmap.createBitmap(mCroppedImgWidth, mCroppedImgHeight, Bitmap.Config.ARGB_8888);
-	    //bitmap.setPixels(, 0, mCroppedImgWidth, 0, 0, mCroppedImgWidth, mCroppedImgHeight);
-	    //return bitmap;
-		return null;
+		return mAveragePixelValue;
 	}
 }

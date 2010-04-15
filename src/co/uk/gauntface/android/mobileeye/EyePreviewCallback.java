@@ -22,7 +22,6 @@ public class EyePreviewCallback implements PreviewCallback
 		{
 			mProcessingThread = new ImageProcessingThread(mPreviewSize, data, mLogHistogram);
 			mProcessingThread.start();
-			
 			mLogHistogram = false;
 		}
 	}

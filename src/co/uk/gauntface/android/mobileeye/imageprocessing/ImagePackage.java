@@ -121,9 +121,4 @@ public class ImagePackage
 	{
 		mAveragePixelValue = a;
 	}
-	
-	public boolean stableArea()
-	{
-		return false;
-	}
 }

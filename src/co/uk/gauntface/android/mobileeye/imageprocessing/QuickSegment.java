@@ -9,7 +9,7 @@ import co.uk.gauntface.android.mobileeye.Singleton;
 
 public class QuickSegment
 {
-	private double mAveragePixelValue = 0;
+	private double mAveragePixelValue;
 	
 	private int MAX_PIXEL_VALUE = 255;
 	private int BUCKET_RANGE = 4;
@@ -36,9 +36,10 @@ public class QuickSegment
 		
 	}
 	
-	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight)
+	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight, double avgPixelVal)
 	{
 		mLog = log;
+		mAveragePixelValue = avgPixelVal;
 		
 		int[] pixelBuckets = createHistogram(origPixels);
 		int[] avgPixelBuckets = averageArray(pixelBuckets);
@@ -46,15 +47,12 @@ public class QuickSegment
 		Peak[] maxIndices = hillClimb(avgPixelBuckets);
 		ArrayList<Peak> groupValues = groupAndMerge(avgPixelBuckets, maxIndices);
 		
-		ImagePackage imgPkg = null;
-		if(Singleton.useExistingArea(mAveragePixelValue) == null)
+		ImagePackage imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
+		
+		RegionGroup r = Singleton.useExistingArea(mAveragePixelValue);
+		if(r != null)
 		{
-			imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
-		}
-		else
-		{
-			Log.d("mobileeye", "We have found a consistant projection area!!!!!");
-			imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
+			imgPkg.setExtractionArea(r);
 		}
 		
 		return imgPkg;
@@ -66,20 +64,16 @@ public class QuickSegment
 		 * MAX_PIXEL_VALUE since 0 is a pixel value
 		 * i.e. 0 - 255 is 256 values
 		 */
-		mAveragePixelValue = 0;
 		int[] pixelBuckets = new int[(int) Math.floor((MAX_PIXEL_VALUE + 1) / BUCKET_RANGE)];
 
 		for(int i = 0; i < pixels.length; i++)
 		{
 			int pixelValue = pixels[i];
-			mAveragePixelValue = mAveragePixelValue + pixelValue;
 			int remainder = pixelValue % BUCKET_RANGE;
 			int bucketIndex = (pixelValue - remainder) / BUCKET_RANGE;
 			
 			pixelBuckets[bucketIndex] = pixelBuckets[bucketIndex] + 1;
 		}
-		
-		mAveragePixelValue = mAveragePixelValue / pixels.length;
 		
 		return pixelBuckets;
 	}

@@ -14,6 +14,13 @@ public class Singleton
 	private static double mAveragePixelValue = 0;
 	private static BluetoothConnectionThread mBluetoothConnection = null;
 	
+	public static final int STATE_FINDING_AREA = 0;
+	public static final int STATE_SETTING_UP_PROJECTION = 1;
+	public static final int STATE_PROJECTING_MARKERS = 2;
+	public static final int STATE_PROJECTING_DATA = 3;
+	
+	private static int mApplicationState = STATE_FINDING_AREA;
+	
 	public static BluetoothConnectionThread getBluetoothConnection()
 	{
 		return mBluetoothConnection;
@@ -35,10 +42,9 @@ public class Singleton
 		mAveragePixelValue = average;
 	}
 	
-	public static RegionGroup useExistingArea(double average)
+	public static RegionGroup useExistingArea(double averagePixelValue)
 	{
-		// TODO Make this a variable, not hardcoded
-		if(average  > (mAveragePixelValue - 20) && average < (mAveragePixelValue + 20))
+		if(hasCameraViewChanged(averagePixelValue) == false)
 		{
 			return mLastIterationRegionGroup;
 		}
@@ -46,5 +52,42 @@ public class Singleton
 		{
 			return null;
 		}
+	}
+	
+	public static boolean hasCameraViewChanged(double averagePixelValue)
+	{
+		// TODO Make this a variable, not hardcoded
+		if(averagePixelValue  > (mAveragePixelValue - 20) && averagePixelValue < (mAveragePixelValue + 20))
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	
+	public static synchronized void setApplicationState(int s)
+	{
+		if(s == STATE_PROJECTING_MARKERS)
+		{
+			if(mApplicationState == STATE_SETTING_UP_PROJECTION)
+			{
+				mApplicationState = s;
+			}
+			else
+			{
+				Log.v("mobileeye", "Stuck in a bad place? - new state = " + s + " old state = " + mApplicationState);
+			}
+		}
+		else
+		{
+			mApplicationState = s;
+		}
+	}
+	
+	public static int getApplicationState()
+	{
+		return mApplicationState;
 	}
 }

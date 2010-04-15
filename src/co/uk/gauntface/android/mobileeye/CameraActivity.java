@@ -6,6 +6,7 @@ import java.util.Locale;
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -100,6 +101,10 @@ public class CameraActivity extends Activity implements Callback
                 installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
                 startActivity(installIntent);
             }
+    	}
+    	else
+    	{
+    		Log.d("mobileeye", "Received some unknown activity result");
     	}
     }
     
@@ -238,6 +243,9 @@ public class CameraActivity extends Activity implements Callback
     	    			{
     	    				mTextToSpeechIsFree = false;
     	    				Log.v("mobileeye", "Rotate porjector view");
+    	    				
+    	    				Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
+    	    				
     	    				double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
     	    				double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
     	    				
@@ -282,6 +290,11 @@ public class CameraActivity extends Activity implements Callback
     	
     	mHasTextToSpeech = false;
     	mTextToSpeechIsFree = true;
+    	
+    	HardButtonReceiver buttonReceiver = new HardButtonReceiver(mHandler);
+    	IntentFilter iF = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);
+    	iF.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+    	registerReceiver(buttonReceiver, iF);
     	
     	mBluetoothConnection = Singleton.getBluetoothConnection();
     	if(mBluetoothConnection != null)
