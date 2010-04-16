@@ -36,10 +36,9 @@ public class QuickSegment
 		
 	}
 	
-	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight, double avgPixelVal)
+	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight)
 	{
 		mLog = log;
-		mAveragePixelValue = avgPixelVal;
 		
 		int[] pixelBuckets = createHistogram(origPixels);
 		int[] avgPixelBuckets = averageArray(pixelBuckets);
@@ -49,11 +48,11 @@ public class QuickSegment
 		
 		ImagePackage imgPkg = generateImagePkg(origPixels, avgPixelBuckets, groupValues, imgWidth, imgHeight, mAveragePixelValue);
 		
-		RegionGroup r = Singleton.useExistingArea(mAveragePixelValue);
-		if(r != null)
-		{
-			imgPkg.setExtractionArea(r);
-		}
+		//RegionGroup r = Singleton.useExistingArea(avgPixelVal);
+		//if(r != null)
+		//{
+		//	imgPkg.setExtractionArea(r);
+		//}
 		
 		return imgPkg;
 	}
@@ -151,6 +150,10 @@ public class QuickSegment
 				if((i + 1) == data.length)
 				{
 					maxGroupIndex = i;
+					if(minGroupIndex < (currentPeakIndex - 7))
+					{
+						minGroupIndex = minGroupIndex - 7;
+					}
 					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
 				}
 			}
@@ -269,35 +272,35 @@ public class QuickSegment
 	public ArrayList<Peak> groupAndMerge(int[] data, Peak[] maxIndices)
 	{
 		ArrayList<Peak> groupValues = new ArrayList<Peak>();
+		
+		if(SHOULD_MERGE_GROUPS == true)
+		{
+			if(maxIndices.length >= 2)
+			{
+				Peak top = maxIndices[0];
+				Peak second = maxIndices[1];
+				
+				if(second.getMaxIndex() >= top.getMinIndex())
+				{
+					Peak[] temp = new Peak[(maxIndices.length - 1)];
+					top.setMinIndex(second.getMinIndex());
+					
+					temp[0] = top;
+					for(int i = 2; i < maxIndices.length; i++)
+					{
+						temp[(i - 1)] = maxIndices[i];
+					}
+					
+					maxIndices = temp;
+				}
+			}
+		}
+		
 		for(int i = 0; i < maxIndices.length; i++)
 		{
 			int minGroupValue = maxIndices[i].getMinIndex();
 			int maxGroupValue = maxIndices[i].getMaxIndex();
 			int peakGroupValue = maxIndices[i].getPeakIndex();
-			
-			if(SHOULD_MERGE_GROUPS == true)
-			{
-				for(int j = 0; j < i && j < groupValues.size(); j++)
-				{
-					Peak p = groupValues.get(j);
-					if(minGroupValue < p.getMaxIndex() && maxGroupValue > p.getMaxIndex())
-					{
-						if(minGroupValue > p.getMinIndex())
-						{
-							minGroupValue = p.getMinIndex();
-							groupValues.remove(j);
-						}
-					}
-					else if(maxGroupValue > p.getMinIndex() && minGroupValue < p.getMinIndex())
-					{
-						if(maxGroupValue < p.getMaxIndex())
-						{
-							maxGroupValue = p.getMaxIndex();
-							groupValues.remove(j);
-						}
-					}
-				}
-			}
 			
 			minGroupValue = minGroupValue * BUCKET_RANGE;
 			maxGroupValue = (maxGroupValue * BUCKET_RANGE) + BUCKET_RANGE;

@@ -47,12 +47,11 @@ public class ImageProcessingThread extends Thread
 			ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), 
 					mLogData,
 					yuvPixel.getImgWidth(),
-					yuvPixel.getImgHeight(),
-					yuvPixel.getAveragePixelValue());
+					yuvPixel.getImgHeight());
 			
 			if(imgPackage != null)
 			{
-				RegionGroup extractionArea = imgPackage.getExtractionArea();
+				RegionGroup extractionArea = null;// = imgPackage.getExtractionArea();
 				imgPackage = AreaExtraction.getExtraction(imgPackage);
 				if(extractionArea != null)
 				{

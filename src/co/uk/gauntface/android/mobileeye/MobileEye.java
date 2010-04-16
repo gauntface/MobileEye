@@ -75,12 +75,18 @@ public class MobileEye extends Activity
     public void onStart()
     {
     	super.onStart();
+    	
+    	IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+    	registerReceiver(mReceiver, filter);
     }
     
     @Override
     public void onResume()
     {
         super.onResume();
+        
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+    	registerReceiver(mReceiver, filter);
     }
     
     @Override
@@ -269,7 +275,7 @@ public class MobileEye extends Activity
     }
     
     private void beginScanning()
-    {	
+    {
     	boolean discoverySuccess = mBluetoothAdapter.startDiscovery();
     	
     	if(discoverySuccess == false)
