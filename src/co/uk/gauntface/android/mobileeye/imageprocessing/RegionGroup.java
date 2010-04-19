@@ -9,6 +9,16 @@ public class RegionGroup
 	
 	private int mRegionSize;
 	
+	public RegionGroup()
+	{
+		mTopLeftX = -1;
+		mTopLeftY = -1;
+		mBottomRightX = -1;
+		mBottomRightY = -1;
+		
+		mRegionSize = 0;
+	}
+	
 	public RegionGroup(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 	{
 		mTopLeftX = topLeftX;
@@ -16,25 +26,25 @@ public class RegionGroup
 		mBottomRightX = bottomRightX;
 		mBottomRightY = bottomRightY;
 		
-		mRegionSize = 1;
+		mRegionSize = 0;
 	}
 	
 	public void extendRegion(int x, int y)
 	{
-		if(x < mTopLeftX)
+		if(mTopLeftX == -1 || x < mTopLeftX)
 		{
 			mTopLeftX = x;
 		}
-		if(x > mBottomRightX)
+		if(mBottomRightX == -1 || x > mBottomRightX)
 		{
 			mBottomRightX = x;
 		}
 		
-		if(y < mTopLeftY)
+		if(mTopLeftY == -1 || y < mTopLeftY)
 		{
 			mTopLeftY = y;
 		}
-		if(y > mBottomRightY)
+		if(mBottomRightY == -1 || y > mBottomRightY)
 		{
 			mBottomRightY = y;
 		}

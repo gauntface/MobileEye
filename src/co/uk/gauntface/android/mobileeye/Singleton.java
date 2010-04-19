@@ -10,8 +10,6 @@ public class Singleton
 	public static final String TAG = new String("mobileeye");
 	public static Bitmap updateImageView;
 	
-	private static RegionGroup mLastIterationRegionGroup;
-	private static double mAveragePixelValue = 0;
 	private static BluetoothConnectionThread mBluetoothConnection = null;
 	
 	public static final int STATE_FINDING_AREA = 0;
@@ -21,6 +19,9 @@ public class Singleton
 	
 	private static int mApplicationState = STATE_FINDING_AREA;
 	
+	private static RegionGroup mLastProjectedArea = null;
+	private static double mLastProjectedPixelAverage = -1;
+	
 	public static BluetoothConnectionThread getBluetoothConnection()
 	{
 		return mBluetoothConnection;
@@ -29,42 +30,6 @@ public class Singleton
 	public static void setBluetoothConnection(BluetoothConnectionThread c)
 	{
 		mBluetoothConnection = c;
-	}
-	
-	public static RegionGroup getLastIterationRegionGroup()
-	{
-		return mLastIterationRegionGroup;
-	}
-	
-	public static void setLastIterationRegionGroup(RegionGroup r, double average)
-	{
-		mLastIterationRegionGroup = r;
-		mAveragePixelValue = average;
-	}
-	
-	public static RegionGroup useExistingArea(double averagePixelValue)
-	{
-		if(hasCameraViewChanged(averagePixelValue) == false)
-		{
-			return mLastIterationRegionGroup;
-		}
-		else
-		{
-			return null;
-		}
-	}
-	
-	public static boolean hasCameraViewChanged(double averagePixelValue)
-	{
-		// TODO Make this a variable, not hardcoded
-		if(averagePixelValue  > (mAveragePixelValue - 20) && averagePixelValue < (mAveragePixelValue + 20))
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
 	}
 	
 	public static synchronized void setApplicationState(int s)
@@ -89,5 +54,25 @@ public class Singleton
 	public static int getApplicationState()
 	{
 		return mApplicationState;
+	}
+	
+	public static RegionGroup getLastProjectedArea()
+	{
+		return mLastProjectedArea;
+	}
+	
+	public static void setLastProjectedArea(RegionGroup l)
+	{
+		mLastProjectedArea = l;
+	}
+
+	public static double getLastProjectedAreaAverage()
+	{
+		return mLastProjectedPixelAverage;
+	}
+	
+	public static void setLastProjectedAreaAverage(double averagePixelValue)
+	{
+		mLastProjectedPixelAverage = averagePixelValue;
 	}
 }

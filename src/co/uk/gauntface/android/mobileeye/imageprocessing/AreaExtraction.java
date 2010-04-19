@@ -14,7 +14,7 @@ public class AreaExtraction
 	
 	public static ImagePackage getExtraction(ImagePackage imgPackage)
 	{
-		mPixels = imgPackage.getImgPixels();
+		mPixels = imgPackage.getRegionGroupPixels();
 		
 		mImgWidth = imgPackage.getImgWidth();
 		mImgHeight = imgPackage.getImgHeight();
@@ -196,7 +196,7 @@ public class AreaExtraction
 			yOffset = yOffset + mImgWidth;
 		}
 		
-		imgPackage.setImgPixels(areaPixels);
+		imgPackage.setAreaExtractionPixels(areaPixels);
 		imgPackage.setExtractionArea(new RegionGroup(mTopLeft[0], mTopLeft[1], mBottomRight[0], mBottomRight[1]));
 		
 		return imgPackage;

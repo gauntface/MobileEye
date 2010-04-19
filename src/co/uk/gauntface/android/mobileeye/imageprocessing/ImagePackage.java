@@ -4,42 +4,38 @@ import java.util.ArrayList;
 
 public class ImagePackage
 {
-	private int[] mImgPixels;
-	private int[] mHistogram;
+	private int[] mOrigImgPixels;
 	private int mImgWidth;
 	private int mImgHeight;
-	private ArrayList<Peak> mPixelGroups;
-	private RegionGroup mRegionGroups;
+	
+	private int[] mHistogram;
+	
+	private ArrayList<Peak> mInitialPixelGroups;
+	private Peak[] mFinalPixelGroups;
+	private Peak mUsedPixelGroup;
+	
+	private RegionGroup mRegionGroup;
 	private int[] mRegionGroupPixels;
+	
 	private RegionGroup mExtractionArea;
+	private int[] mExtractionAreaPixels;
 	private double mAveragePixelValue;
 	
-	public ImagePackage()
+	public ImagePackage(int[] origPixels, int imgWidth, int imgHeight)
 	{
-		
+		mOrigImgPixels = origPixels;
+		mImgWidth = imgWidth;
+		mImgHeight = imgHeight;
 	}
 	
-	public ImagePackage(int[] p, int[] a, int w, int h, ArrayList<Peak> g, RegionGroup r, int[] rG, double aPV)
+	public int[] getOrigImgPixels()
 	{
-		mImgPixels = p;
-		mHistogram = a;
-		mImgWidth = w;
-		mImgHeight = h;
-		mPixelGroups = g;
-		mRegionGroups = r;
-		mRegionGroupPixels = rG;
-		mExtractionArea = null;
-		mAveragePixelValue = aPV;
+		return mOrigImgPixels;
 	}
 	
-	public int[] getImgPixels()
+	public void setOrigImgPixels(int[] p)
 	{
-		return mImgPixels;
-	}
-	
-	public void setImgPixels(int[] p)
-	{
-		mImgPixels = p;
+		mOrigImgPixels = p;
 	}
 	
 	public int[] getHistogram()
@@ -72,24 +68,44 @@ public class ImagePackage
 		mImgHeight = h;
 	}
 	
-	public ArrayList<Peak> getPixelGroups()
+	public ArrayList<Peak> getInitPixelGroups()
 	{
-		return mPixelGroups;
+		return mInitialPixelGroups;
 	}
 	
-	public void setPixelGroups(ArrayList<Peak> g)
+	public void setInitPixelGroups(ArrayList<Peak> g)
 	{
-		mPixelGroups = g;
+		mInitialPixelGroups = g;
+	}
+	
+	public Peak[] getFinalPixelGroups()
+	{
+		return mFinalPixelGroups;
+	}
+	
+	public void setFinalPixelGroups(Peak[] f)
+	{
+		mFinalPixelGroups = f;
+	}
+	
+	public Peak getUsedPixelGroup()
+	{
+		return mUsedPixelGroup;
+	}
+	
+	public void setUsedPixelGroup(Peak u)
+	{
+		mUsedPixelGroup = u;
 	}
 	
 	public RegionGroup getRegionGroup()
 	{
-		return mRegionGroups;
+		return mRegionGroup;
 	}
 	
 	public void setRegionGroup(RegionGroup rg)
 	{
-		mRegionGroups = rg;
+		mRegionGroup = rg;
 	}
 	
 	public int[] getRegionGroupPixels()
@@ -110,6 +126,16 @@ public class ImagePackage
 	public void setExtractionArea(RegionGroup ea)
 	{
 		mExtractionArea = ea;
+	}
+	
+	public int[] getAreaExtractionPixels()
+	{
+		return mExtractionAreaPixels;
+	}
+	
+	public void setAreaExtractionPixels(int[] e)
+	{
+		mExtractionAreaPixels = e;
 	}
 	
 	public double getAveragePixelValue()

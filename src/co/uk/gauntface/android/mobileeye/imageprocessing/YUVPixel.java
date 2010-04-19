@@ -1,6 +1,6 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
-import android.graphics.Bitmap;
+import android.util.Log;
 
 public class YUVPixel
 {
@@ -18,16 +18,30 @@ public class YUVPixel
 	public YUVPixel(byte[] data, int imgWidth, int imgHeight,
 			int leftOffset, int topOffset,
 			int croppedWidth, int croppedHeight,
-			int scaleDownFactor)
+			int scaleDownFactor, boolean targetSizePrescaled)
 	{
 		mData = data;
 		mImgWidth = imgWidth;
 		mImgHeight = imgHeight;
+		
+		// The offset will only be non zero when scaled
 		mLeftOffset = leftOffset;
 		mTopOffset = topOffset;
-		mCroppedImgWidth = croppedWidth;
-		mCroppedImgHeight = croppedHeight;
+		
+		// The targetsize may be the full image size & hence not scaled down
+		if(targetSizePrescaled == false)
+		{
+			mCroppedImgWidth = croppedWidth / scaleDownFactor;
+			mCroppedImgHeight = croppedHeight / scaleDownFactor;
+		}
+		else
+		{
+			mCroppedImgWidth = croppedWidth;
+			mCroppedImgHeight = croppedHeight;
+		}
+		
 		mScaleDownFactor = scaleDownFactor;
+		
 		mAveragePixelValue = 0;
 		
 		if (mLeftOffset + mCroppedImgWidth > mImgWidth 
@@ -35,45 +49,40 @@ public class YUVPixel
 			throw new IllegalArgumentException("Crop rectangle does not fit within image data.");
 		}
 		
+		Log.d("mobileeye", "The Orig Img (w,h): ("+mImgWidth+","+mImgHeight+")");
+		Log.d("mobileeye", "The Cut Img (w,h): ("+mCroppedImgWidth+","+mCroppedImgHeight+")");
+		Log.d("mobileeye", "The Offset (left,top): ("+mLeftOffset+","+mTopOffset+")");
+		
 		createPixels();
 	}
 	
 	private void createPixels()
-	{
-		int xRatio = mScaleDownFactor;
-		int yRatio = mScaleDownFactor;
-		
-		int targetWidth = mCroppedImgWidth / mScaleDownFactor;
-		int targetHeight = mCroppedImgHeight / mScaleDownFactor;
-		
-		int noOfPixels = targetWidth * targetHeight;
-		
+	{	
+		int noOfPixels = mCroppedImgWidth * mCroppedImgHeight;
 		mPixels = new int[noOfPixels];
 		
+		// Need to mulitply by the scaledown factor to take into account that
+		// the offset will be scaled down
 		int yNewOffset = 0;
-		int yOrigImgIndex = mTopOffset * mImgWidth + mLeftOffset;
+		int yOrigImgIndex = mScaleDownFactor *((mTopOffset * mImgWidth) + mLeftOffset);
+		int yOrigImgSkip = mScaleDownFactor * mImgWidth;
 		
-		int yOrigImgSkip = yRatio * mCroppedImgWidth;
-		
-		for(int y = 0; y < targetHeight; y++)
+		for(int y = 0; y < mCroppedImgHeight; y++)
 		{
 			int xOrigImgIndex = 0;
-			for(int x = 0; x < targetWidth; x++)
+			for(int x = 0; x < mCroppedImgWidth; x++)
 			{
 				int greyPixel = mData[yOrigImgIndex + xOrigImgIndex] & 0xff;
 				mPixels[yNewOffset + x] = greyPixel;
 				
-				xOrigImgIndex = xOrigImgIndex + xRatio;
+				xOrigImgIndex = xOrigImgIndex + mScaleDownFactor;
 				
 				mAveragePixelValue = mAveragePixelValue + greyPixel;
 			}
 			
-			yNewOffset = yNewOffset + targetWidth;
+			yNewOffset = yNewOffset + mCroppedImgWidth;
 			yOrigImgIndex = yOrigImgIndex + yOrigImgSkip;
 		}
-		
-		mCroppedImgWidth = targetWidth;
-		mCroppedImgHeight = targetHeight;
 		
 		mAveragePixelValue = mAveragePixelValue / noOfPixels;
 	}
