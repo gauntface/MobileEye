@@ -213,7 +213,8 @@ public class ImageProcessingThread extends Thread
 		Utility.saveImageToSDCard(temp, "6_Segment.png");
 		
 		RegionGroup r = imgPackage.getRegionGroup();
-		s = "("+r.getTopLeftX()+","+r.getTopLeftY()+") ("+r.getBottomRightX()+","+r.getBottomRightY()+")";
+		s = "("+r.getTopLeftX()+","+r.getTopLeftY()+") ("+r.getBottomRightX()+","+r.getBottomRightY()+")\n";
+		s = s + "center: ("+r.getWeightedCenter().getArg1()+","+r.getWeightedCenter().getArg2()+")";
 		Utility.saveTextToSDCard(s, "7_FinalRegion");
 		
 		r = imgPackage.getExtractionArea();

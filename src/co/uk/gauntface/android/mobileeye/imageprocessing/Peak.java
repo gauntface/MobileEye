@@ -5,19 +5,22 @@ public class Peak
 	private int mMinIndex;
 	private int mMaxIndex;
 	private int mPeakIndex;
+	private int mPeakSize;
 	
 	public Peak()
 	{
 		mMinIndex = -1;
 		mMaxIndex = -1;
 		mPeakIndex = -1;
+		mPeakSize = 0;
 	}
 	
-	public Peak(int minIndex, int maxIndex, int peakIndex)
+	public Peak(int minIndex, int maxIndex, int peakIndex, int peakSize)
 	{
 		mMinIndex = minIndex;
 		mMaxIndex = maxIndex;
 		mPeakIndex = peakIndex;
+		mPeakSize = peakSize;
 	}
 	
 	public int getMinIndex()
@@ -48,5 +51,15 @@ public class Peak
 	public void setPeakIndex(int peakIndex)
 	{
 		mPeakIndex = peakIndex;
+	}
+	
+	public int getPeakSize()
+	{
+		return mPeakSize;
+	}
+	
+	public void setPeakSize(int size)
+	{
+		mPeakSize = size;
 	}
 }

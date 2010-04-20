@@ -1,5 +1,7 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
+import android.util.Log;
+
 public class AreaExtraction
 {
 	private static final int COLOR_REGION = 255;
@@ -21,9 +23,17 @@ public class AreaExtraction
 		
 		int[] regionPixels = imgPackage.getRegionGroupPixels();
 		RegionGroup regionGroup = imgPackage.getRegionGroup();
+		Pair weightedCenter = regionGroup.getWeightedCenter();
 		
-		int centerPointX = regionGroup.getTopLeftX() + ((int) (regionGroup.getBottomRightX() - regionGroup.getTopLeftX()) / 2);
-		int centerPointY = regionGroup.getTopLeftY() + ((int) (regionGroup.getBottomRightY() - regionGroup.getTopLeftY()) / 2);
+		//int centerPointX = regionGroup.getTopLeftX() + ((int) (regionGroup.getBottomRightX() - regionGroup.getTopLeftX()) / 2);
+		//int centerPointY = regionGroup.getTopLeftY() + ((int) (regionGroup.getBottomRightY() - regionGroup.getTopLeftY()) / 2);
+		
+		int centerPointX = weightedCenter.getArg1();
+		int centerPointY = weightedCenter.getArg2();
+		
+		Log.d("mobileeye", "Traditional center (x,y): ("+centerPointX+","+centerPointY+")");
+		Log.d("mobileeye", "Weighted center (x,y): ("+weightedCenter.getArg1()+","+weightedCenter.getArg2()+")");
+		
 		mCenterPixelIndex = (centerPointY * mImgWidth) + centerPointX;
 		
 		mTopLeft = new int[]{centerPointX, centerPointY};
@@ -35,6 +45,8 @@ public class AreaExtraction
 		boolean expandLeft = true;
 		boolean expandRight = true;
 		boolean expandDown = true;
+		
+		int numberOfAcceptableErrorPixels = 1;
 		
 		while(areaFullyExpanded == false)
 		{
@@ -52,14 +64,22 @@ public class AreaExtraction
 					tempTopY = tempTopY - 1;
 					
 					int newPixelOffset = (tempTopY * mImgWidth) + mTopLeft[0];
+					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= xSpread; i++)
 					{
 						if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
 						{
-							expandUp = false;
-							tempTopY = mTopLeft[1];
-							break;
+							if(incorrectPixelCount > numberOfAcceptableErrorPixels)
+							{
+								expandUp = false;
+								tempTopY = mTopLeft[1];
+								break;
+							}
+							else
+							{
+								incorrectPixelCount = incorrectPixelCount + 1;
+							}
 						}
 					}
 					
@@ -83,14 +103,22 @@ public class AreaExtraction
 					tempBottomY = tempBottomY + 1;
 					
 					int newPixelOffset = (tempBottomY * mImgWidth) + mTopLeft[0];
+					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= xSpread; i++)
 					{
 						if(mPixels[newPixelOffset + i] != mPixels[mCenterPixelIndex])
 						{
-							expandDown = false;
-							tempBottomY = mBottomRight[1];
-							break;
+							if(incorrectPixelCount > numberOfAcceptableErrorPixels)
+							{
+								expandDown = false;
+								tempBottomY = mBottomRight[1];
+								break;
+							}
+							else
+							{
+								incorrectPixelCount = incorrectPixelCount + 1;
+							}
 						}
 					}
 					
@@ -114,14 +142,22 @@ public class AreaExtraction
 					tempTopX = tempTopX - 1;
 					
 					int yOffset = (mTopLeft[1] * mImgWidth) + tempTopX;
+					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= ySpread; i++)
 					{
 						if(mPixels[yOffset] != mPixels[mCenterPixelIndex])
 						{
-							expandLeft = false;
-							tempTopX = mTopLeft[0];
-							break;
+							if(incorrectPixelCount > numberOfAcceptableErrorPixels)
+							{
+								expandLeft = false;
+								tempTopX = mTopLeft[0];
+								break;
+							}
+							else
+							{
+								incorrectPixelCount = incorrectPixelCount + 1;
+							}
 						}
 						yOffset = yOffset + mImgWidth;
 					}
@@ -146,14 +182,22 @@ public class AreaExtraction
 					tempBottomX = tempBottomX + 1;
 					
 					int yOffset = (mTopLeft[1] * mImgWidth) + tempBottomX;
+					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= ySpread; i++)
 					{
 						if(mPixels[yOffset] != mPixels[mCenterPixelIndex])
 						{
-							tempBottomX = mBottomRight[0];
-							expandRight = false;
-							break;
+							if(incorrectPixelCount > numberOfAcceptableErrorPixels)
+							{
+								tempBottomX = mBottomRight[0];
+								expandRight = false;
+								break;
+							}
+							else
+							{
+								incorrectPixelCount = incorrectPixelCount + 1; 
+							}
 						}
 						yOffset = yOffset + mImgWidth;
 					}

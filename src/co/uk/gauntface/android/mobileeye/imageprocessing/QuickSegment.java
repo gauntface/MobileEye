@@ -131,38 +131,49 @@ public class QuickSegment
 		int minGroupIndex = 0;
 		int maxGroupIndex = 0;
 		int currentPeakIndex = 0;
-		
+		int peakSize = 0;
 		boolean foundPeak = false;
 		
 		for(int i = 1; i < data.length; i++)
 		{
 			if(foundPeak == false)
 			{
+				// Change the 200 to a percentage of the pixels in the image
+				if(data[minGroupIndex] < 200)
+				{
+					minGroupIndex = i;
+					peakSize = data[i];
+				}
+				
 				if(data[i] > data[currentPeakIndex])
 				{
 					currentPeakIndex = i;
+					peakSize = peakSize + data[i];
 				}
 				else
 				{	
 					foundPeak = true;
 					maxGroupIndex = i;
+					peakSize = peakSize + data[i];
 				}
 				
 				if((i + 1) == data.length)
 				{
 					maxGroupIndex = i;
-					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex, peakSize));
 				}
 			}
 			else
 			{
-				if(data[i] < data[maxGroupIndex])
+				// Change the 200 to a percentage of the pixels in the image
+				if(data[i] < data[maxGroupIndex] && data[i] > 200)
 				{
 					maxGroupIndex = i;
+					peakSize = peakSize + data[i];
 				}
 				else
 				{
-					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex, peakSize));
 					
 					foundPeak = false;
 					
@@ -172,7 +183,7 @@ public class QuickSegment
 				
 				if((i + 1) == data.length)
 				{
-					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex));
+					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex, peakSize));
 				}
 			}
 		}
@@ -274,10 +285,11 @@ public class QuickSegment
 			int minGroupValue = maxIndices[i].getMinIndex() * BUCKET_RANGE;
 			int maxGroupValue = (maxIndices[i].getMaxIndex() * BUCKET_RANGE) + BUCKET_RANGE;
 			int peakGroupValue = maxIndices[i].getPeakIndex();
+			int peakSize = maxIndices[i].getPeakSize();
 			
-			if(SHOULD_MERGE_GROUPS == true && i == 1)
+			if(SHOULD_MERGE_GROUPS == true && groupValues.size() > 0)
 			{
-				Peak p = groupValues.get(0);
+				Peak p = groupValues.get(groupValues.size() - 1);
 					
 				if(maxGroupValue >= p.getMinIndex() && minGroupValue < p.getMinIndex())
 				{
@@ -290,12 +302,14 @@ public class QuickSegment
 							peakGroupValue = p.getPeakIndex();
 						}
 						
-						groupValues.remove(0);
+						peakSize = peakSize + p.getPeakSize();
+						
+						groupValues.remove(groupValues.size() - 1);
 					}
 				}
 			}
 			
-			Peak p = new Peak(minGroupValue, maxGroupValue, peakGroupValue);
+			Peak p = new Peak(minGroupValue, maxGroupValue, peakGroupValue, peakSize);
 			
 			groupValues.add(p);
 		}
@@ -384,105 +398,6 @@ public class QuickSegment
 					rG.extendRegion(x, y);
 					regionGrouping[currentYOffset + x] = nextAvailGroupIndex;
 					newPixels[currentYOffset + x] = GROUP_0_COLOR;
-					
-					// The pixel is in the brightest peak range
-					/**if(regionGrouping[offsetTotal] <= 0)
-					{
-						// The pixel hasn't been assigned to a group
-						ArrayList<Pair> stack = new ArrayList<Pair>();
-						stack.add(new Pair(x, y));
-						
-						RegionGroup rG = new RegionGroup(x, y, x, y);
-						
-						while(stack.size() > 0)
-						{
-							Pair p = stack.get(0);
-							stack.remove(0);
-							
-							int pX = p.getArg1();
-							int pY = p.getArg2();
-							
-							int yOffset = pY * imgWidth;
-							regionGrouping[yOffset + pX] = nextAvailGroupIndex;
-							rG.extendRegion(pX, pY);
-							
-							if(pX - 1 >= 0)
-							{
-								int leftOffset = yOffset + (pX - 1);
-								if(regionGrouping[leftOffset] == 0)
-								{
-									if(origPixels[leftOffset] >= pixelRangeMin &&
-											origPixels[leftOffset] <= pixelRangeMax)
-									{
-										stack.add(new Pair((pX - 1), pY));
-										regionGrouping[leftOffset] = -1;
-									}
-								}
-							}
-							
-							if(pX + 1 < imgWidth)
-							{
-								int rightOffset = yOffset + (pX + 1);
-								if(regionGrouping[rightOffset] == 0)
-								{
-									if(origPixels[rightOffset] >= pixelRangeMin &&
-											origPixels[rightOffset] <= pixelRangeMax)
-									{
-										stack.add(new Pair((pX+1), pY));
-										regionGrouping[rightOffset] = -1;
-									}
-								}
-							}
-							
-							if(pY - 1 >= 0)
-							{
-								int aboveOffset = yOffset - imgWidth + pX;
-								if(regionGrouping[aboveOffset] == 0)
-								{
-									if(origPixels[aboveOffset] >= pixelRangeMin &&
-											origPixels[aboveOffset] <= pixelRangeMax)
-									{
-										stack.add(new Pair(pX, (pY - 1)));
-										regionGrouping[aboveOffset] = nextAvailGroupIndex;
-									}
-								}
-							}
-							
-							
-							if((pY + 1) < imgHeight)
-							{
-								int belowOffset = yOffset + imgWidth + pX;
-								if(regionGrouping[belowOffset] == 0)
-								{
-									if(origPixels[belowOffset] >= pixelRangeMin &&
-											origPixels[belowOffset] <= pixelRangeMax)
-									{
-										stack.add(new Pair(pX, (pY + 1)));
-										regionGrouping[belowOffset] = nextAvailGroupIndex;
-									}
-								}
-							}
-						}
-						
-						regions.add(rG);
-						
-						if(maxRegionGroup == -1 ||
-								regions.get((regions.size() - 1)).getRegionSize()
-								> regions.get(maxRegionGroup).getRegionSize())
-						{
-							maxRegionGroup = (regions.size() - 1);
-						}
-						
-						cumulativeImageCovered = cumulativeImageCovered + (rG.getRegionSize() / origPixels.length);
-						
-						if((1 - cumulativeImageCovered) < (regions.get(maxRegionGroup).getRegionSize() / origPixels.length))
-						{
-							Log.d("mobileeye", "Search for regions = false 100 - cumulative = " + cumulativeImageCovered);
-							searchForRegions = false;
-						}
-						
-						nextAvailGroupIndex = nextAvailGroupIndex + 1;
-					}**/
 				}
 				else
 				{
@@ -515,8 +430,8 @@ public class QuickSegment
 		for(int i = 0; i < groupValues.size(); i++)
 		{
 			int peakIndex = groupValues.get(i).getPeakIndex();
-			double factor = (double) peakIndex / (double) MAX_PIXEL_VALUE;
-			double weight = factor * avgPixelBuckets[peakIndex];
+			double factor = (double) (peakIndex * BUCKET_RANGE) / (double) MAX_PIXEL_VALUE;
+			double weight = factor * groupValues.get(i).getPeakIndex();
 			
 			if(weight > maxWeight)
 			{

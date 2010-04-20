@@ -9,6 +9,9 @@ public class RegionGroup
 	
 	private int mRegionSize;
 	
+	private double mWeightedCenterX;
+	private double mWeightedCenterY;
+	
 	public RegionGroup()
 	{
 		mTopLeftX = -1;
@@ -50,6 +53,9 @@ public class RegionGroup
 		}
 		
 		mRegionSize = mRegionSize + 1;
+		
+		mWeightedCenterX = mWeightedCenterX + x;
+		mWeightedCenterY = mWeightedCenterY + y;
 	}
 	
 	public int getTopLeftX()
@@ -75,5 +81,10 @@ public class RegionGroup
 	public int getRegionSize()
 	{
 		return mRegionSize;
+	}
+	
+	public Pair getWeightedCenter()
+	{
+		return new Pair((int)(mWeightedCenterX / mRegionSize), (int)(mWeightedCenterY / mRegionSize));
 	}
 }

@@ -49,10 +49,6 @@ public class YUVPixel
 			throw new IllegalArgumentException("Crop rectangle does not fit within image data.");
 		}
 		
-		Log.d("mobileeye", "The Orig Img (w,h): ("+mImgWidth+","+mImgHeight+")");
-		Log.d("mobileeye", "The Cut Img (w,h): ("+mCroppedImgWidth+","+mCroppedImgHeight+")");
-		Log.d("mobileeye", "The Offset (left,top): ("+mLeftOffset+","+mTopOffset+")");
-		
 		createPixels();
 	}
 	
