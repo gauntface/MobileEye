@@ -239,7 +239,7 @@ public class CameraActivity extends Activity implements Callback
     				}
     				else
     				{
-    					if(mTextToSpeechIsFree == true)
+    					if(mTextToSpeechIsFree == true || mTextToSpeechIsFree == false)
     	    			{
     	    				mTextToSpeechIsFree = false;
     	    				Log.v("mobileeye", "Rotate porjector view");

@@ -18,8 +18,11 @@ public class Singleton
 	public static final int STATE_PROJECTING_DATA = 3;
 	
 	private static int mApplicationState = STATE_FINDING_AREA;
+	private static boolean mControlMsgSent = false;
 	
 	private static RegionGroup mLastProjectedArea = null;
+	private static int mLastProjectedAreaImgW = -1;
+	private static int mLastProjectedAreaImgH = -1;
 	private static double mLastProjectedPixelAverage = -1;
 	
 	public static BluetoothConnectionThread getBluetoothConnection()
@@ -49,6 +52,18 @@ public class Singleton
 		{
 			mApplicationState = s;
 		}
+		
+		mControlMsgSent = false;
+	}
+	
+	public static boolean hasVoiceCommandBeenSent()
+	{
+		return mControlMsgSent;
+	}
+	
+	public static void voiceCommandSent()
+	{
+		mControlMsgSent = true;
 	}
 	
 	public static int getApplicationState()
@@ -74,5 +89,25 @@ public class Singleton
 	public static void setLastProjectedAreaAverage(double averagePixelValue)
 	{
 		mLastProjectedPixelAverage = averagePixelValue;
+	}
+	
+	public static int getLastProjectedImgWidth()
+	{
+		return mLastProjectedAreaImgW;
+	}
+	
+	public static void setLastProjectedImgWidth(int w)
+	{
+		mLastProjectedAreaImgW = w;
+	}
+	
+	public static int getLastProjectedImgHeight()
+	{
+		return mLastProjectedAreaImgH;
+	}
+	
+	public static void setLastProjectedImgHeight(int h)
+	{
+		mLastProjectedAreaImgH = h;
 	}
 }

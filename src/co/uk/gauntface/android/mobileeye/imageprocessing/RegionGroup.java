@@ -29,7 +29,10 @@ public class RegionGroup
 		mBottomRightX = bottomRightX;
 		mBottomRightY = bottomRightY;
 		
-		mRegionSize = 0;
+		int regionWidth = bottomRightX - topLeftX;
+		int regionHeight = bottomRightY - topLeftY;
+		
+		mRegionSize = regionWidth * regionHeight;
 	}
 	
 	public void extendRegion(int x, int y)

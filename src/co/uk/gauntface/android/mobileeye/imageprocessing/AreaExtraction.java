@@ -2,6 +2,7 @@ package co.uk.gauntface.android.mobileeye.imageprocessing;
 
 import android.util.Log;
 
+
 public class AreaExtraction
 {
 	private static final int COLOR_REGION = 255;
@@ -11,17 +12,14 @@ public class AreaExtraction
 	private static int mCenterPixelIndex;
 	private static int[] mTopLeft;
 	private static int[] mBottomRight;
-	private static int mImgWidth;
-	private static int mImgHeight;
 	
 	public static ImagePackage getExtraction(ImagePackage imgPackage)
 	{
 		mPixels = imgPackage.getRegionGroupPixels();
 		
-		mImgWidth = imgPackage.getImgWidth();
-		mImgHeight = imgPackage.getImgHeight();
+		int imgWidth = imgPackage.getImgWidth();
+		int imgHeight = imgPackage.getImgHeight();
 		
-		int[] regionPixels = imgPackage.getRegionGroupPixels();
 		RegionGroup regionGroup = imgPackage.getRegionGroup();
 		Pair weightedCenter = regionGroup.getWeightedCenter();
 		
@@ -31,10 +29,7 @@ public class AreaExtraction
 		int centerPointX = weightedCenter.getArg1();
 		int centerPointY = weightedCenter.getArg2();
 		
-		Log.d("mobileeye", "Traditional center (x,y): ("+centerPointX+","+centerPointY+")");
-		Log.d("mobileeye", "Weighted center (x,y): ("+weightedCenter.getArg1()+","+weightedCenter.getArg2()+")");
-		
-		mCenterPixelIndex = (centerPointY * mImgWidth) + centerPointX;
+		mCenterPixelIndex = (centerPointY * imgWidth) + centerPointX;
 		
 		mTopLeft = new int[]{centerPointX, centerPointY};
 		mBottomRight = new int[]{centerPointX, centerPointY};
@@ -63,7 +58,7 @@ public class AreaExtraction
 					// Can move up
 					tempTopY = tempTopY - 1;
 					
-					int newPixelOffset = (tempTopY * mImgWidth) + mTopLeft[0];
+					int newPixelOffset = (tempTopY * imgWidth) + mTopLeft[0];
 					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= xSpread; i++)
@@ -97,12 +92,12 @@ public class AreaExtraction
 			if(expandDown == true)
 			{
 				int tempBottomY = mBottomRight[1];
-				if(mBottomRight[1] < (mImgHeight - 1))
+				if(mBottomRight[1] < (imgHeight - 1))
 				{
 					// Can move down
 					tempBottomY = tempBottomY + 1;
 					
-					int newPixelOffset = (tempBottomY * mImgWidth) + mTopLeft[0];
+					int newPixelOffset = (tempBottomY * imgWidth) + mTopLeft[0];
 					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= xSpread; i++)
@@ -141,7 +136,7 @@ public class AreaExtraction
 					// Can move up
 					tempTopX = tempTopX - 1;
 					
-					int yOffset = (mTopLeft[1] * mImgWidth) + tempTopX;
+					int yOffset = (mTopLeft[1] * imgWidth) + tempTopX;
 					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= ySpread; i++)
@@ -159,7 +154,7 @@ public class AreaExtraction
 								incorrectPixelCount = incorrectPixelCount + 1;
 							}
 						}
-						yOffset = yOffset + mImgWidth;
+						yOffset = yOffset + imgWidth;
 					}
 					
 					if(expandLeft == true)
@@ -176,12 +171,12 @@ public class AreaExtraction
 			if(expandRight == true)
 			{
 				int tempBottomX = mBottomRight[0];
-				if(mBottomRight[0] < (mImgWidth - 1))
+				if(mBottomRight[0] < (imgWidth - 1))
 				{
 					// Can move up
 					tempBottomX = tempBottomX + 1;
 					
-					int yOffset = (mTopLeft[1] * mImgWidth) + tempBottomX;
+					int yOffset = (mTopLeft[1] * imgWidth) + tempBottomX;
 					int incorrectPixelCount = 0;
 					
 					for(int i = 0; i <= ySpread; i++)
@@ -199,7 +194,7 @@ public class AreaExtraction
 								incorrectPixelCount = incorrectPixelCount + 1; 
 							}
 						}
-						yOffset = yOffset + mImgWidth;
+						yOffset = yOffset + imgWidth;
 					}
 					
 					if(expandRight == true)
@@ -221,28 +216,56 @@ public class AreaExtraction
 		}
 		
 		//Pair maxGroup = imgPackage.getPixelGroups().get(0);
-		int[] areaPixels = new int[regionPixels.length];
+		
+		RegionGroup extraction = new RegionGroup(mTopLeft[0], mTopLeft[1], mBottomRight[0], mBottomRight[1]);
+		
+		imgPackage.setExtractionArea(extraction);
+		imgPackage = createPixels(imgPackage);
+		
+		return imgPackage;
+	}
+	
+	public static ImagePackage createPixels(ImagePackage i)
+	{
+		int[] origImg = i.getOrigImgPixels();
+		RegionGroup r = i.getExtractionArea();
+		int[] areaPixels = new int[i.getImgWidth() * i.getImgHeight()];
+		
+		double averageRegionValue = 0;
+		int extractionSize = 0;
 		
 		int yOffset  = 0;
-		for(int y = 0; y < mImgHeight; y++)
+		for(int y = 0; y < i.getImgHeight(); y++)
 		{
-			for(int x = 0; x < mImgWidth; x++)
+			for(int x = 0; x < i.getImgWidth(); x++)
 			{
-				if(y >= mTopLeft[1] && y <= mBottomRight[1] && x >= mTopLeft[0] && x <= mBottomRight[0])
+				if(y >= r.getTopLeftY() && y <= r.getBottomRightY() && x >= r.getTopLeftX() && x <= r.getBottomRightX())
 				{
-					areaPixels[yOffset+x] = COLOR_REGION;
+					int t = yOffset + x;
+					averageRegionValue = averageRegionValue + origImg[t];
+					extractionSize = extractionSize + 1;
+					areaPixels[t] = COLOR_REGION;
 				}
 				else
 				{
 					areaPixels[yOffset+x] = NO_COLOR_REGION;
 				}
 			}
-			yOffset = yOffset + mImgWidth;
+			yOffset = yOffset + i.getImgWidth();
 		}
 		
-		imgPackage.setAreaExtractionPixels(areaPixels);
-		imgPackage.setExtractionArea(new RegionGroup(mTopLeft[0], mTopLeft[1], mBottomRight[0], mBottomRight[1]));
+		if(extractionSize > 0)
+		{
+			averageRegionValue = averageRegionValue / extractionSize;
+		}
+		else
+		{
+			averageRegionValue = 0;
+		}
 		
-		return imgPackage;
+		i.setAreaExtractionPixels(areaPixels);
+		i.setAveragePixelValue(averageRegionValue);
+		
+		return i;
 	}
 }

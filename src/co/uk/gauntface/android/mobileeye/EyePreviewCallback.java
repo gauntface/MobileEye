@@ -11,6 +11,8 @@ public class EyePreviewCallback implements PreviewCallback
 	private ImageProcessingThread mProcessingThread;
 	private boolean mLogHistogram = false;
 	
+	private int hackCounter = 0;
+	
 	public EyePreviewCallback(Size previewSize)
 	{
 		mPreviewSize = previewSize;

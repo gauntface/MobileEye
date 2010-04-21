@@ -20,39 +20,44 @@ public class Utility
 	
 	public static Bitmap renderBitmap(int[] pixels, int width, int height, boolean isGreyScale)
 	{
-		Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-		if(isGreyScale == true)
+		if(pixels != null)
 		{
-			int[] image = new int[pixels.length];
-			
-			int inputOffset = 0;
-			for (int y = 0; y < height; y++)
+			Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+			if(isGreyScale == true)
 			{
-				int outputOffset = y * width;
+				int[] image = new int[pixels.length];
 				
-				for (int x = 0; x < width; x++)
+				int inputOffset = 0;
+				for (int y = 0; y < height; y++)
 				{
-					if(pixels[inputOffset + x] >= 0)
+					int outputOffset = y * width;
+					
+					for (int x = 0; x < width; x++)
 					{
-						image[outputOffset + x] = 0xff000000 | (pixels[inputOffset + x] * 0x00010101);
+						if(pixels[inputOffset + x] >= 0)
+						{
+							image[outputOffset + x] = 0xff000000 | (pixels[inputOffset + x] * 0x00010101);
+						}
+						else
+						{
+							image[outputOffset + x] = 0x00000000;
+						}
 					}
-					else
-					{
-						image[outputOffset + x] = 0x00000000;
-					}
+					
+					inputOffset = inputOffset + width;
 				}
 				
-				inputOffset = inputOffset + width;
+				bitmap.setPixels(image, 0, width, 0, 0, width, height);
+			}
+			else
+			{
+				bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
 			}
 			
-			bitmap.setPixels(image, 0, width, 0, 0, width, height);
-		}
-		else
-		{
-			bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+			return bitmap;
 		}
 		
-	    return bitmap;
+		return null;
 	}
 	
 	public static int multipleTwoPreComp(int n)
@@ -80,32 +85,35 @@ public class Utility
 	
 	public static boolean saveImageToSDCard(Bitmap b, String appendFileName)
 	{
-		try
+		if(b != null)
 		{
-			File sdCardFile = Environment.getExternalStorageDirectory();
-			if(sdCardFile.canWrite() == true)
+			try
 			{
-				File mobileEyeFile = new File(sdCardFile, "MobileEye");
-				mobileEyeFile.mkdirs();
+				File sdCardFile = Environment.getExternalStorageDirectory();
+				if(sdCardFile.canWrite() == true)
+				{
+					File mobileEyeFile = new File(sdCardFile, "MobileEye");
+					mobileEyeFile.mkdirs();
+					
+					File imageFile = new File(mobileEyeFile, mPrependFileName+appendFileName);
+					
+					FileOutputStream fileStream = new FileOutputStream(imageFile);
+					b.compress(CompressFormat.PNG, 100, fileStream);
+					
+					fileStream.close();
+				}
+				else
+				{
+					Log.e(Singleton.TAG, "Cannot write to SD Card");
+				}
 				
-				File imageFile = new File(mobileEyeFile, mPrependFileName+appendFileName);
-				
-				FileOutputStream fileStream = new FileOutputStream(imageFile);
-				b.compress(CompressFormat.PNG, 100, fileStream);
-				
-				fileStream.close();
+				return true;
 			}
-			else
+			catch(Exception e)
 			{
-				Log.e(Singleton.TAG, "Cannot write to SD Card");
+				Log.e(Singleton.TAG, "Utility Error - " + e);
+				e.printStackTrace();
 			}
-			
-			return true;
-		}
-		catch(Exception e)
-		{
-			Log.e(Singleton.TAG, "Utility Error - " + e);
-			e.printStackTrace();
 		}
 		
 		return false;

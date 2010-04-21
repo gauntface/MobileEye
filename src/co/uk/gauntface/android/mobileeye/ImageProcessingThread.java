@@ -38,15 +38,24 @@ public class ImageProcessingThread extends Thread
 	{
 		mData = mData.clone();
 		
-		Bitmap b = null;
-		
 		int scaleDownFactor = 3;
+		
 		
 		int targetWidth = mImageSize.width;
 		int targetHeight = mImageSize.height;
 		boolean targetSizeScaled = false;
 		int topOffset = 0;
 		int leftOffset = 0;
+		
+		if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
+		{
+			RegionGroup r = Singleton.getLastProjectedArea();
+			targetWidth = r.getBottomRightX() - r.getTopLeftX();
+			targetHeight = r.getBottomRightY() - r.getTopLeftY();
+			targetSizeScaled = true;
+			topOffset = r.getTopLeftY();
+			leftOffset = r.getTopLeftX();
+		}
 		
 		
 		
@@ -65,26 +74,75 @@ public class ImageProcessingThread extends Thread
 			{
 				imgPackage = AreaExtraction.getExtraction(imgPackage);
 				RegionGroup areaExtraction = imgPackage.getExtractionArea();
+				
 				if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
 				{
 					Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
+					Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
+					Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
+					Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
+					
 					Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
 				}
+				
+				//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+				Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+				Singleton.updateImageView = b;
 			}
 			else if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
 			{
+				RegionGroup lastExtraction = Singleton.getLastProjectedArea();
+				imgPackage.setRegionGroup(lastExtraction);
+				imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
+				imgPackage.setExtractionArea(lastExtraction);
 				double prevAvg = Singleton.getLastProjectedAreaAverage();
-				if(prevAvg < 0)
+				
+				if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
 				{
-					Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
-				}
-				else if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
-				{
-					Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+					//Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+					
+					if(Singleton.hasVoiceCommandBeenSent() == false)
+					{
+						// Using the previous iterations extraction area
+						int centerX = lastExtraction.getTopLeftX() +
+							((lastExtraction.getBottomRightX() - lastExtraction.getTopLeftX()) / 2);
+						int centerY = lastExtraction.getTopLeftY() +
+							((lastExtraction.getBottomRightY() - lastExtraction.getTopLeftY()) / 2);
+						
+						double rLeftRight = 0;
+						double rUpDown = 0;
+						
+						double halfImgWidth = Singleton.getLastProjectedImgWidth() / 2.0;
+						
+						// Offset to center of image = 0 degrees
+						double relativeX = centerX - halfImgWidth;
+						relativeX = relativeX / halfImgWidth;
+						
+						double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
+						
+						// Round up by ten then make int then divide by 10
+						rotateLeftRight = rotateLeftRight * 10;
+						int temp = (int) rotateLeftRight;
+						rotateLeftRight = ((double) temp) / 10;
+						
+						Message msg = CameraWrapper.mHandler.obtainMessage();
+						msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
+						
+						Bundle data = new Bundle();
+						data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
+						data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
+						
+						msg.setData(data);
+						
+						CameraWrapper.mHandler.dispatchMessage(msg);
+						
+						Singleton.voiceCommandSent();
+					}
+					
 				}
 				else
 				{
-					Log.d("mobileeye", "NEED TO CHANGE STATE BACK!!!!");
+					Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
 				}
 			}
 			/**if(extractionArea != null)
@@ -121,14 +179,10 @@ public class ImageProcessingThread extends Thread
 				CameraWrapper.mHandler.dispatchMessage(msg);
 			}**/
 			
-			b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
-			
 			if(mLogData == true)
 			{
 				logData(yuvPixel, imgPackage);
 			}
-				
-			Singleton.updateImageView = b;
 			
 			Message msg = CameraWrapper.mHandler.obtainMessage();
 			msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
@@ -139,16 +193,18 @@ public class ImageProcessingThread extends Thread
 	
 	private boolean averagesApproximatelyMatch(double prevAvg, double averagePixelValue)
 	{
-		if(Math.abs(prevAvg - averagePixelValue) < 20)
+		if(Math.abs(prevAvg - averagePixelValue) < 8)
 		{
 			return true;
 		}
+		//Log.d("mobileeye", "BAD BAD BAD AVG");
+		//Log.d("mobileeye", "prevAvg = "+prevAvg+" newAvg = "+averagePixelValue+" Average Match - " + Math.abs(prevAvg - averagePixelValue));
 		return false;
 	}
 
 	private boolean foundGoodArea(RegionGroup areaExtraction, int imgWidth, int imgHeight)
 	{
-		if(areaExtraction.getRegionSize() > ((imgWidth * imgHeight) * 0.1))
+		if(areaExtraction.getRegionSize() > ((imgWidth * imgHeight) * 0.2))
 		{
 			return true;
 		}
@@ -181,28 +237,28 @@ public class ImageProcessingThread extends Thread
 		Utility.saveTextToSDCard(s, "2_HistogramData.txt");
 		
 		ArrayList<Peak> pixelGroups = imgPackage.getInitPixelGroups();
-		s = "<Min> <Peak> <Max>\n";
+		s = "<Min> <Peak> <Max> <PeakSize>\n";
 		for(int i = 0; i < pixelGroups.size(); i++)
 		{
 			Peak p = pixelGroups.get(i);
-			s = s + p.getMinIndex()+" "+p.getPeakIndex()+" "+p.getMaxIndex()+"\n";
+			s = s + p.getMinIndex()+" "+p.getPeakIndex()+" "+p.getMaxIndex()+" "+p.getPeakSize()+"\n";
 		}
 		
 		Utility.saveTextToSDCard(s, "3_InitPixelGroups.txt");
 		
 		Peak[] finalPixelGroups = imgPackage.getFinalPixelGroups();
-		s = "<Min> <Peak> <Max>\n";
+		s = "<Min> <Peak> <Max> <PeakSize>\n";
 		for(int i = 0; i < finalPixelGroups.length; i++)
 		{
 			Peak p = finalPixelGroups[i];
-			s = s + p.getMinIndex()+" "+p.getPeakIndex()+" "+p.getMaxIndex()+"\n";
+			s = s + p.getMinIndex()+" "+p.getPeakIndex()+" "+p.getMaxIndex()+" "+p.getPeakSize()+"\n";
 		}
 		
 		Utility.saveTextToSDCard(s, "4_FinalPixelGroups.txt");
 		
 		Peak usedPixelGroup = imgPackage.getUsedPixelGroup();
-		s = "<Min> <Peak> <Max>\n";
-		s = s + usedPixelGroup.getMinIndex() + " " + usedPixelGroup.getPeakIndex() + " " + usedPixelGroup.getMaxIndex();
+		s = "<Min> <Peak> <Max> <PeakSize>\n";
+		s = s + usedPixelGroup.getMinIndex() + " " + usedPixelGroup.getPeakIndex() + " " + usedPixelGroup.getMaxIndex() + " " + usedPixelGroup.getPeakSize();
 		
 		Utility.saveTextToSDCard(s, "5_UsedPixelGroup.txt");
 		
