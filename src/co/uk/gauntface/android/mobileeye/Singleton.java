@@ -3,6 +3,7 @@ package co.uk.gauntface.android.mobileeye;
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import co.uk.gauntface.android.mobileeye.imageprocessing.RegionGroup;
 import android.graphics.Bitmap;
+import android.text.format.Time;
 import android.util.Log;
 
 public class Singleton
@@ -19,6 +20,9 @@ public class Singleton
 	
 	private static int mApplicationState = STATE_FINDING_AREA;
 	private static boolean mControlMsgSent = false;
+	private static long mTimeElapse = 0;
+	
+	private static int mAreaStableCount = 0;
 	
 	private static RegionGroup mLastProjectedArea = null;
 	private static int mLastProjectedAreaImgW = -1;
@@ -27,7 +31,9 @@ public class Singleton
 	
 	public static BluetoothConnectionThread getBluetoothConnection()
 	{
-		return mBluetoothConnection;
+		BluetoothConnectionThread temp = mBluetoothConnection;
+		mBluetoothConnection = null;
+		return temp;
 	}
 	
 	public static void setBluetoothConnection(BluetoothConnectionThread c)
@@ -56,6 +62,16 @@ public class Singleton
 		mControlMsgSent = false;
 	}
 	
+	public static int getStableAreaCount()
+	{
+		return mAreaStableCount;
+	}
+	
+	public static void setStableAreaCount(int a)
+	{
+		mAreaStableCount = a;
+	}
+	
 	public static boolean hasVoiceCommandBeenSent()
 	{
 		return mControlMsgSent;
@@ -64,6 +80,12 @@ public class Singleton
 	public static void voiceCommandSent()
 	{
 		mControlMsgSent = true;
+		mTimeElapse = System.nanoTime();
+	}
+	
+	public static long timeElapsed(long t)
+	{
+		return t - mTimeElapse;
 	}
 	
 	public static int getApplicationState()

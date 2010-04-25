@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -38,6 +39,8 @@ public class CameraActivity extends Activity implements Callback
 	public static final int BLUETOOTH_STREAMS_INIT = 3;
 	
 	public static final int ROTATE_PROJECTOR_VIEW = 4;
+	
+	public static final int APPLICATION_STATE_CHANGED = 5;
 	
 	public static final String ROTATE_LEFT_RIGHT_KEY = "RotateLeftRightKey";
 	public static final String ROTATE_UP_DOWN_KEY = "RotateUpDownKey";
@@ -64,6 +67,8 @@ public class CameraActivity extends Activity implements Callback
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera);
+        
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         initActivity();
     }
@@ -113,6 +118,8 @@ public class CameraActivity extends Activity implements Callback
     {
     	super.onStart();
     	
+    	getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    	
     	Log.v(Singleton.TAG, "MobileEye - onStart");
     }
     
@@ -121,6 +128,8 @@ public class CameraActivity extends Activity implements Callback
         super.onResume();
 
         Log.v(Singleton.TAG, "MobileEye - onResume");
+        
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         // Start the preview if it is not started.
         if ((mCamera.isPreviewing() == false) && (mStartPreviewFail == false)) {
@@ -141,7 +150,7 @@ public class CameraActivity extends Activity implements Callback
     {
     	super.onPause();
     	
-    	Log.v(Singleton.TAG, "MobileEye - onPause");
+    	Log.d(Singleton.TAG, "MobileEye - onPause");
     	
         mCamera.stopPreview();
         
@@ -159,6 +168,8 @@ public class CameraActivity extends Activity implements Callback
     {
     	super.onStop();
     	
+    	Log.d(Singleton.TAG, "MobileEye - onStop");
+    	
     	if(mBluetoothConnection != null)
     	{
     		mBluetoothConnection.cancel();
@@ -175,9 +186,11 @@ public class CameraActivity extends Activity implements Callback
     {
     	super.onDestroy();
     	
+    	Log.d(Singleton.TAG, "MobileEye - onDestroy");
+    	
     	if(mBluetoothConnection != null)
     	{
-    		mBluetoothConnection.cancel();
+    		mBluetoothConnection.kill();
     	}
     	
     	if(mHasTextToSpeech == true)
@@ -224,64 +237,75 @@ public class CameraActivity extends Activity implements Callback
     			}
     			else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
     			{
+    				Log.v("mobileeye", "Bluetooth Connection Lost Message Received");
     				Intent intent = new Intent(getApplicationContext(), MobileEye.class);
     				startActivity(intent);
     				
     				finish();
     			}
     			else if(msg.arg1 == ROTATE_PROJECTOR_VIEW)
-    			{		
-    				if(mHasTextToSpeech == false)
-    				{
-    					Intent checkIntent = new Intent();
-    					checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
-    					startActivityForResult(checkIntent, TEXT_TO_SPEECH_REQ_CODE);
-    				}
-    				else
-    				{
-    					if(mTextToSpeechIsFree == true || mTextToSpeechIsFree == false)
+    			{
+    				Log.v("mobileeye", "Rotate Projector View Message Received");
+    				if(mHasTextToSpeech == true && (mTextToSpeechIsFree == true || mTextToSpeechIsFree == false))
+    	    		{
+    	    			mTextToSpeechIsFree = false;
+    	    			Log.v("mobileeye", "Rotate porjector view");
+    	    			
+    	    			Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
+    	    			
+    	    			double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
+    	    			double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
+    	    			
+    	    			//Log.d("mobileeye", "rLR - " + rLeftRight);
+    	    			
+    	    			String s;
+    				
+    	    			if(rLeftRight < 0)
     	    			{
-    	    				mTextToSpeechIsFree = false;
-    	    				Log.v("mobileeye", "Rotate porjector view");
-    	    				
-    	    				Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
-    	    				
-    	    				double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
-    	    				double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
-    	    				
-    	    				Log.d("mobileeye", "rLR - " + rLeftRight);
-    	    				
-    	    				String s;
-    					
-    	    				if(rLeftRight < 0)
-    	    				{
-    	    					s = "Rotate left by "+Math.abs(rLeftRight)+" degrees";
-    	    				}
-    	    				else if(rLeftRight > 0)
-    	    				{
-    	    					s = "Rotate right by "+rLeftRight+" degrees";
-    	    				}
-    	    				else
-    	    				{
-    	    					s = "Rotate to 0 degrees";
-    	    				}
-    	    				
-    	    				mTextToSpeech.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
-								
-								public void onUtteranceCompleted(String utteranceId)
-								{
-									Log.d("mobileeye", "Utterance Complete ID - " + utteranceId);
-								    if(utteranceId.equals(UTTERANCE_ID))
-								    {
-								    	Log.d("mobileeye", "TextToSpeechIsFree = true");
-								    	mTextToSpeechIsFree = true;
-								    }
-								}
-							});
-    	    				HashMap<String, String> hashParams = new HashMap();
-    	    				hashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, UTTERANCE_ID);
-    	    				mTextToSpeech.speak(s, TextToSpeech.QUEUE_FLUSH, hashParams);
+    	    				s = "Rotate left by "+Math.abs(rLeftRight)+" degrees";
     	    			}
+    	    			else if(rLeftRight > 0)
+    	    			{
+    	    				s = "Rotate right by "+rLeftRight+" degrees";
+    	    			}
+    	    			else
+    	    			{
+    	    				s = "Rotate to 0 degrees";
+    	    			}
+    	    			
+    	    			if(mBluetoothConnection != null)
+    	    			{
+    	    				String btMsg = new String("<ShowMarkers>"+Math.abs(rLeftRight)+"</ShowMarkers>");
+    	    				mBluetoothConnection.write(btMsg.getBytes());
+    	    			}
+    	    			
+    	    			mTextToSpeech.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
+							
+							public void onUtteranceCompleted(String utteranceId)
+							{
+								//Log.d("mobileeye", "Utterance Complete ID - " + utteranceId);
+							    if(utteranceId.equals(UTTERANCE_ID))
+							    {
+							    	//Log.d("mobileeye", "TextToSpeechIsFree = true");
+							    	mTextToSpeechIsFree = true;
+							    }
+							}
+						});
+    	    			HashMap<String, String> hashParams = new HashMap();
+    	    			hashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, UTTERANCE_ID);
+    	    			mTextToSpeech.speak(s, TextToSpeech.QUEUE_FLUSH, hashParams);
+    	    		}
+    			}
+    			else if(msg.arg1 == APPLICATION_STATE_CHANGED)
+    			{
+    				Log.v("mobileeye", "Application State Changed");
+    				if(mBluetoothConnection != null)
+    				{
+    					if(Singleton.getApplicationState() == Singleton.STATE_FINDING_AREA)
+    					{
+    						String hideMarkers = new String("<HideMarkers></HideMarkers>");
+    						mBluetoothConnection.write(hideMarkers.getBytes());
+    					}
     				}
     			}
     		}
@@ -290,6 +314,10 @@ public class CameraActivity extends Activity implements Callback
     	
     	mHasTextToSpeech = false;
     	mTextToSpeechIsFree = true;
+    	
+    	Intent checkIntent = new Intent();
+		checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+		startActivityForResult(checkIntent, TEXT_TO_SPEECH_REQ_CODE);
     	
     	HardButtonReceiver buttonReceiver = new HardButtonReceiver(mHandler);
     	IntentFilter iF = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);

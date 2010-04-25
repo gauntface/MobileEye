@@ -27,11 +27,13 @@ public class BluetoothConnectionThread extends Thread
 	private OutputStream mOutputStream;
 	
 	private Handler mHandler;
+	private boolean mClosingConnection;
 	
 	public BluetoothConnectionThread(BluetoothDevice d, Handler h)
 	{
 		mBluetoothDevice = d;
 		mHandler = h;
+		mClosingConnection = false;
 		
 		BluetoothSocket tmp = null;
 		try
@@ -76,6 +78,7 @@ public class BluetoothConnectionThread extends Thread
 			synchronized(mHandler)
 	    	{
 				mHandler.sendMessage(msg);
+				Log.d("mobileeye", "IOException - " + connectException);
 	    	}
 			
             // Unable to connect; close the socket and get out
@@ -167,13 +170,16 @@ public class BluetoothConnectionThread extends Thread
     		}
     		catch (IOException e1)
     		{
-    			Log.v("mobileeye", "IOException occured");
-            	Message errorMsg = Message.obtain();
-            	errorMsg.arg1 = BLUETOOTH_CONNECTION_LOST;
-                synchronized(mHandler)
-            	{
-        			mHandler.sendMessage(errorMsg);
-            	}
+    			if(mClosingConnection == false)
+    			{
+    				Log.v("mobileeye", "IOException occured - " + e1);
+    				Message errorMsg = Message.obtain();
+    				errorMsg.arg1 = BLUETOOTH_CONNECTION_LOST;
+    				synchronized(mHandler)
+    				{
+    					mHandler.sendMessage(errorMsg);
+    				}
+    			}
                 break;
     		}
         }
@@ -182,6 +188,7 @@ public class BluetoothConnectionThread extends Thread
     /* Call this from the main Activity to send data to the remote device */
     public void write(byte[] bytes)
     {
+    	Log.d("mobileeye", "Writing data to bluetooth - " + new String(bytes));
         try
         {
         	mOutputStream.write(bytes);
@@ -192,23 +199,36 @@ public class BluetoothConnectionThread extends Thread
         }
     }
     
-	/** Will cancel an in-progress connection, and close the socket */
+	/** Will cancel any in-progress connection, and close the socket */
     public void cancel()
     {
         try
         {
+        	Log.d("mobileeye", "BlueToothConnection.cancel() Called");
+        	mOutputStream.close();
+        	mInputStream.close();
         	mBluetoothSocket.close();
         }
         catch (IOException e)
         {
-        	Message msg = Message.obtain();
-			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
-			msg.arg2 = 3;
-			synchronized(mHandler)
-	    	{
-				mHandler.sendMessage(msg);
-	    	}
+        	/**
+        	 * We want the connection to die quietly
+        	 */
+        	Log.d("mobileeye", "BlueToothConnection.cancel() Exception Cause");
+        	//Message msg = Message.obtain();
+			//msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
+			//msg.arg2 = 3;
+			//synchronized(mHandler)
+	    	//{
+			//	mHandler.sendMessage(msg);
+	    	//}
         }
+    }
+    
+    public void kill()
+    {
+    	mClosingConnection = true;
+    	cancel();
     }
     
     public void setHandler(Handler h)

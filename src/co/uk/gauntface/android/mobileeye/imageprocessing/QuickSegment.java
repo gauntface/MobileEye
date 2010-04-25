@@ -303,7 +303,7 @@ public class QuickSegment
 				
 				if((currentPeakWeight / higherPeakWeight) > 0.2)
 				{
-					if(maxGroupValue >= p.getMinIndex() && minGroupValue < p.getMinIndex())
+					if(maxGroupValue > p.getMinIndex() && minGroupValue < p.getMinIndex())
 					{
 						if(maxGroupValue < p.getMaxIndex())
 						{

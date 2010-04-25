@@ -36,7 +36,7 @@ public class Utility
 					{
 						if(pixels[inputOffset + x] >= 0)
 						{
-							image[outputOffset + x] = 0xff000000 | (pixels[inputOffset + x] * 0x00010101);
+							image[outputOffset + x] = 0x7f000000 | (pixels[inputOffset + x] * 0x00010101);
 						}
 						else
 						{

@@ -83,9 +83,11 @@ public class ImageProcessingThread extends Thread
 					Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
 					
 					Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
+					Singleton.setStableAreaCount(0);
 				}
 				
 				//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+				
 				Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 				Singleton.updateImageView = b;
 			}
@@ -97,12 +99,15 @@ public class ImageProcessingThread extends Thread
 				imgPackage.setExtractionArea(lastExtraction);
 				double prevAvg = Singleton.getLastProjectedAreaAverage();
 				
-				if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
+				int stableAreaCount = Singleton.getStableAreaCount();
+				
+				if(stableAreaCount > (3*10^9))
 				{
-					//Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
-					
+					// Display the markers
 					if(Singleton.hasVoiceCommandBeenSent() == false)
 					{
+						//Log.d("mobileeye", "Top (x, y) - ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+")");
+						//Log.d("mobileeye", "Bottom (x, y) - ("+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightY()+")");
 						// Using the previous iterations extraction area
 						int centerX = lastExtraction.getTopLeftX() +
 							((lastExtraction.getBottomRightX() - lastExtraction.getTopLeftX()) / 2);
@@ -113,12 +118,15 @@ public class ImageProcessingThread extends Thread
 						double rUpDown = 0;
 						
 						double halfImgWidth = Singleton.getLastProjectedImgWidth() / 2.0;
+						//Log.d("mobileeye", "Half Img Width - " + halfImgWidth);
 						
 						// Offset to center of image = 0 degrees
 						double relativeX = centerX - halfImgWidth;
 						relativeX = relativeX / halfImgWidth;
+						//Log.d("mobileeye", "RelativeX / halfImgWidth - " + relativeX);
 						
 						double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
+						//Log.d("mobileeye", "RotateLeftRight - " + rotateLeftRight);
 						
 						// Round up by ten then make int then divide by 10
 						rotateLeftRight = rotateLeftRight * 10;
@@ -137,12 +145,60 @@ public class ImageProcessingThread extends Thread
 						CameraWrapper.mHandler.dispatchMessage(msg);
 						
 						Singleton.voiceCommandSent();
+						
+						Singleton.setApplicationState(Singleton.STATE_PROJECTING_MARKERS);
 					}
+				}
+				if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
+				{
+					stableAreaCount = stableAreaCount + 1;
+					Singleton.setStableAreaCount(stableAreaCount);
+					
+					/**else
+					{
+						long elapsed = Singleton.timeElapsed(System.nanoTime());
+						
+						if(elapsed >= 10)
+						{
+							Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+						}
+					}**/
 					
 				}
 				else
 				{
-					Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+					imgPackage = AreaExtraction.getExtraction(imgPackage);
+					RegionGroup newAreaExtraction = imgPackage.getExtractionArea();
+					
+					if(newAreaExtraction.getRegionSize() >= (lastExtraction.getRegionSize() * 0.7))
+					{
+						stableAreaCount = stableAreaCount + 1;
+						Singleton.setStableAreaCount(stableAreaCount);
+						
+						int newTopLeftX = lastExtraction.getTopLeftX() + newAreaExtraction.getTopLeftX();
+						int newTopLeftY = lastExtraction.getTopLeftY() + newAreaExtraction.getTopLeftY();
+						
+						int newBottomRightX = newTopLeftX + newAreaExtraction.getBottomRightX();
+						int newBottomRightY = newTopLeftY + newAreaExtraction.getBottomRightY();
+						
+						Log.d("mobileeye", "Old - ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+") ("
+								+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightX()+")");
+						Log.d("mobileeye", "New - ("+newTopLeftX+","+newTopLeftY+") ("
+								+newBottomRightX+","+newBottomRightY+")");
+						
+						RegionGroup r = new RegionGroup(newTopLeftX, newTopLeftY, newBottomRightX, newBottomRightY);
+						Singleton.setLastProjectedArea(r);
+						Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+					}
+					else
+					{
+						Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+						
+						Message msg = CameraWrapper.mHandler.obtainMessage();
+						msg.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
+						
+						CameraWrapper.mHandler.dispatchMessage(msg);
+					}
 				}
 			}
 			/**if(extractionArea != null)
