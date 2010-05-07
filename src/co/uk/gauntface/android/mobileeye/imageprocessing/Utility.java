@@ -18,7 +18,7 @@ public class Utility
 {
 	private static String mPrependFileName;
 	
-	public static Bitmap renderBitmap(int[] pixels, int width, int height, boolean isGreyScale)
+	public static Bitmap renderBitmap(int[] pixels, int width, int height, boolean isGreyScale, int opacity)
 	{
 		if(pixels != null)
 		{
@@ -36,7 +36,7 @@ public class Utility
 					{
 						if(pixels[inputOffset + x] >= 0)
 						{
-							image[outputOffset + x] = 0x7f000000 | (pixels[inputOffset + x] * 0x00010101);
+							image[outputOffset + x] = (opacity * 0x01000000) | (pixels[inputOffset + x] * 0x00010101);
 						}
 						else
 						{

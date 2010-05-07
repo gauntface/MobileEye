@@ -88,7 +88,7 @@ public class ImageProcessingThread extends Thread
 				
 				//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
 				
-				Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+				Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
 				Singleton.updateImageView = b;
 			}
 			else if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
@@ -280,7 +280,8 @@ public class ImageProcessingThread extends Thread
 		Bitmap temp = Utility.renderBitmap(yuvPixel.getPixels(),
 				yuvPixel.getImgWidth(),
 				yuvPixel.getImgHeight(),
-				true);
+				true,
+				255);
 		Utility.saveImageToSDCard(temp, "1_B&W.png");
 		
 		String s = new String();
@@ -321,7 +322,8 @@ public class ImageProcessingThread extends Thread
 		temp = Utility.renderBitmap(imgPackage.getRegionGroupPixels(),
 				imgPackage.getImgWidth(),
 				imgPackage.getImgHeight(),
-				true);
+				true,
+				255);
 		Utility.saveImageToSDCard(temp, "6_Segment.png");
 		
 		RegionGroup r = imgPackage.getRegionGroup();
@@ -334,7 +336,7 @@ public class ImageProcessingThread extends Thread
 		Utility.saveTextToSDCard(s, "8_ExtractionArea");
 		
 		temp = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(),
-				imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+				imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 255);
 		Utility.saveImageToSDCard(temp, "9_Area.png");
 	}
 }
