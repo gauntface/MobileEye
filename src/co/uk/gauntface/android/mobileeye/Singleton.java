@@ -22,7 +22,8 @@ public class Singleton
 	private static boolean mControlMsgSent = false;
 	private static long mTimeElapse = 0;
 	
-	private static int mAreaStableCount = 0;
+	private static long mAreaStableCountStart = 0;
+	private static long mAreaStableCount = 0;
 	
 	private static RegionGroup mLastProjectedArea = null;
 	private static int mLastProjectedAreaImgW = -1;
@@ -62,14 +63,20 @@ public class Singleton
 		mControlMsgSent = false;
 	}
 	
-	public static int getStableAreaCount()
+	public static long getStableAreaCount()
 	{
 		return mAreaStableCount;
 	}
 	
-	public static void setStableAreaCount(int a)
+	public static void resetStableAreaCount()
 	{
-		mAreaStableCount = a;
+		mAreaStableCountStart = System.nanoTime();
+		mAreaStableCount = 0;
+	}
+	
+	public static void setStableAreaCount(long a)
+	{
+		mAreaStableCount = mAreaStableCount + (mAreaStableCountStart - a);
 	}
 	
 	public static boolean hasVoiceCommandBeenSent()

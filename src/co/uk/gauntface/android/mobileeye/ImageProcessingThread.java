@@ -27,6 +27,9 @@ public class ImageProcessingThread extends Thread
 	private byte[] mData;
 	private boolean mLogData;
 	
+	private static final int SCALE_DOWN_FACTOR = 3;
+	private static final long STABLE_AREA_PERIOD = 2*10^9; 
+	
 	public ImageProcessingThread(Size imageSize, byte[] data, boolean logData)
 	{
 		mImageSize = imageSize;
@@ -38,29 +41,10 @@ public class ImageProcessingThread extends Thread
 	{
 		mData = mData.clone();
 		
-		int scaleDownFactor = 3;
+		// Get image pixels
+		YUVPixel yuvPixel = getYUVPixels(SCALE_DOWN_FACTOR);
 		
-		
-		int targetWidth = mImageSize.width;
-		int targetHeight = mImageSize.height;
-		boolean targetSizeScaled = false;
-		int topOffset = 0;
-		int leftOffset = 0;
-		
-		if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
-		{
-			RegionGroup r = Singleton.getLastProjectedArea();
-			targetWidth = r.getBottomRightX() - r.getTopLeftX();
-			targetHeight = r.getBottomRightY() - r.getTopLeftY();
-			targetSizeScaled = true;
-			topOffset = r.getTopLeftY();
-			leftOffset = r.getTopLeftX();
-		}
-		
-		
-		
-		YUVPixel yuvPixel = new YUVPixel(mData, mImageSize.width, mImageSize.height, leftOffset, topOffset, targetWidth, targetHeight, scaleDownFactor, targetSizeScaled);
-		
+		// Segment the image (Needs to take into account the state
 		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
 		ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), 
 				mLogData,
@@ -83,7 +67,7 @@ public class ImageProcessingThread extends Thread
 					Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
 					
 					Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
-					Singleton.setStableAreaCount(0);
+					Singleton.resetStableAreaCount();
 				}
 				
 				//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
@@ -99,15 +83,13 @@ public class ImageProcessingThread extends Thread
 				imgPackage.setExtractionArea(lastExtraction);
 				double prevAvg = Singleton.getLastProjectedAreaAverage();
 				
-				int stableAreaCount = Singleton.getStableAreaCount();
+				long stableAreaCount = Singleton.getStableAreaCount();
 				
-				if(stableAreaCount > (3*10^9))
+				if(stableAreaCount > STABLE_AREA_PERIOD)
 				{
 					// Display the markers
 					if(Singleton.hasVoiceCommandBeenSent() == false)
 					{
-						//Log.d("mobileeye", "Top (x, y) - ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+")");
-						//Log.d("mobileeye", "Bottom (x, y) - ("+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightY()+")");
 						// Using the previous iterations extraction area
 						int centerX = lastExtraction.getTopLeftX() +
 							((lastExtraction.getBottomRightX() - lastExtraction.getTopLeftX()) / 2);
@@ -118,15 +100,12 @@ public class ImageProcessingThread extends Thread
 						double rUpDown = 0;
 						
 						double halfImgWidth = Singleton.getLastProjectedImgWidth() / 2.0;
-						//Log.d("mobileeye", "Half Img Width - " + halfImgWidth);
 						
 						// Offset to center of image = 0 degrees
 						double relativeX = centerX - halfImgWidth;
 						relativeX = relativeX / halfImgWidth;
-						//Log.d("mobileeye", "RelativeX / halfImgWidth - " + relativeX);
 						
 						double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
-						//Log.d("mobileeye", "RotateLeftRight - " + rotateLeftRight);
 						
 						// Round up by ten then make int then divide by 10
 						rotateLeftRight = rotateLeftRight * 10;
@@ -152,7 +131,9 @@ public class ImageProcessingThread extends Thread
 				if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
 				{
 					stableAreaCount = stableAreaCount + 1;
-					Singleton.setStableAreaCount(stableAreaCount);
+					Singleton.setStableAreaCount(System.nanoTime());
+					
+					//Log.v("mobileeye", "System.nanoTime = " + System.nanoTime());
 					
 					/**else
 					{
@@ -201,39 +182,6 @@ public class ImageProcessingThread extends Thread
 					}
 				}
 			}
-			/**if(extractionArea != null)
-			{
-				// Using the previous iterations extraction area
-				int centerX = extractionArea.getTopLeftX() +
-					((extractionArea.getBottomRightX() - extractionArea.getTopLeftX()) / 2);
-				int centerY = extractionArea.getTopLeftY() +
-					((extractionArea.getBottomRightY() - extractionArea.getTopLeftY()) / 2);
-				
-				double rLeftRight = 0;
-				double rUpDown = 0;
-				
-				double halfImgWidth = imgPackage.getImgWidth() / 2.0;
-				
-				double relativeX = centerX - halfImgWidth;
-				relativeX= relativeX / halfImgWidth;
-				
-				double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
-				
-				rotateLeftRight = rotateLeftRight * 10;
-				int temp = (int) rotateLeftRight;
-				rotateLeftRight = ((double) temp) / 10;
-				
-				Message msg = CameraWrapper.mHandler.obtainMessage();
-				msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
-				
-				Bundle data = new Bundle();
-				data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
-				data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
-				
-				msg.setData(data);
-				
-				CameraWrapper.mHandler.dispatchMessage(msg);
-			}**/
 			
 			if(mLogData == true)
 			{
@@ -245,6 +193,37 @@ public class ImageProcessingThread extends Thread
 			
 			CameraWrapper.mHandler.dispatchMessage(msg);
 		}
+	}
+	
+	/**
+	 * This function takes into account the state of the application and will extract the correct number
+	 * of pixels accordingly
+	 * 
+	 * The scaleDownFactor is a variable which control how many times the original image should be reduced
+	 * (i.e. 2 = 1/2, 3 = 1/3)
+	 * 
+	 * @param scaleDownFactor
+	 * @return
+	 */
+	private YUVPixel getYUVPixels(int scaleDownFactor)
+	{
+		int targetWidth = mImageSize.width;
+		int targetHeight = mImageSize.height;
+		boolean targetSizeScaled = false;
+		int topOffset = 0;
+		int leftOffset = 0;
+		
+		if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
+		{
+			RegionGroup r = Singleton.getLastProjectedArea();
+			targetWidth = r.getBottomRightX() - r.getTopLeftX();
+			targetHeight = r.getBottomRightY() - r.getTopLeftY();
+			targetSizeScaled = true;
+			topOffset = r.getTopLeftY();
+			leftOffset = r.getTopLeftX();
+		}
+		
+		return new YUVPixel(mData, mImageSize.width, mImageSize.height, leftOffset, topOffset, targetWidth, targetHeight, scaleDownFactor, targetSizeScaled);
 	}
 	
 	private boolean averagesApproximatelyMatch(double prevAvg, double averagePixelValue)
