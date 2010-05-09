@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -27,21 +28,24 @@ public class HardButtonReceiver extends BroadcastReceiver
 		
 		if(key.getAction() == KeyEvent.ACTION_UP)
 		{
-			Singleton.setApplicationState(Singleton.STATE_PROJECTING_MARKERS);
-			
 			int keycode = key.getKeyCode();
 			
 			if(keycode == KeyEvent.KEYCODE_MEDIA_NEXT)
 			{
-				Log.d("mobileeye", "Next Pressed");
+				Log.v("mobileeye", "Next Pressed");
 			}
 			else if(keycode == KeyEvent.KEYCODE_MEDIA_PREVIOUS)
 			{
-				Log.d("mobileeye", "Previous pressed");
+				Log.v("mobileeye", "Previous pressed");
 			}
 			else if(keycode == KeyEvent.KEYCODE_HEADSETHOOK)
 			{
-				Log.d("mobileeye", "Head Set Hook pressed");
+				Log.v("mobileeye", "Head Set Hook pressed");
+				Message msg = Message.obtain();
+				msg.arg1 = CameraActivity.HARDWARE_BUTTON_PRESS;
+				msg.arg2 = KeyEvent.KEYCODE_HEADSETHOOK;
+				
+				mHandler.dispatchMessage(msg);
 			}
 			else
 			{

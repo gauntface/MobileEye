@@ -4,20 +4,18 @@ import java.util.ArrayList;
 
 import co.uk.gauntface.android.mobileeye.imageprocessing.AreaExtraction;
 import co.uk.gauntface.android.mobileeye.imageprocessing.ImagePackage;
+import co.uk.gauntface.android.mobileeye.imageprocessing.Pair;
 import co.uk.gauntface.android.mobileeye.imageprocessing.Peak;
 import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegment;
 import co.uk.gauntface.android.mobileeye.imageprocessing.QuickSegmentFactory;
 import co.uk.gauntface.android.mobileeye.imageprocessing.RegionGroup;
 import co.uk.gauntface.android.mobileeye.imageprocessing.Utility;
 import co.uk.gauntface.android.mobileeye.imageprocessing.YUVPixel;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Message;
-import android.speech.tts.TextToSpeech;
 import android.text.format.Time;
-import android.util.Log;
 
 public class ImageProcessingThread extends Thread
 {
@@ -28,7 +26,8 @@ public class ImageProcessingThread extends Thread
 	private boolean mLogData;
 	
 	private static final int SCALE_DOWN_FACTOR = 3;
-	private static final long STABLE_AREA_PERIOD = 2*10^9; 
+	private static final long STABLE_AREA_PERIOD = 3;
+	private static final long MAX_MARKER_SETUP_TIME = 20;
 	
 	public ImageProcessingThread(Size imageSize, byte[] data, boolean logData)
 	{
@@ -54,147 +53,10 @@ public class ImageProcessingThread extends Thread
 		// segmentImage returns null when there is no extractable region
 		if(imgPackage != null)
 		{
-			if(Singleton.getApplicationState() == Singleton.STATE_FINDING_AREA)
-			{
-				imgPackage = AreaExtraction.getExtraction(imgPackage);
-				RegionGroup areaExtraction = imgPackage.getExtractionArea();
-				
-				if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
-				{
-					Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
-					Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
-					Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
-					Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
-					
-					Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
-					Singleton.resetStableAreaCount();
-				}
-				
-				//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
-				
-				Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
-				Singleton.updateImageView = b;
-			}
-			else if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
-			{
-				RegionGroup lastExtraction = Singleton.getLastProjectedArea();
-				imgPackage.setRegionGroup(lastExtraction);
-				imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
-				imgPackage.setExtractionArea(lastExtraction);
-				double prevAvg = Singleton.getLastProjectedAreaAverage();
-				
-				long stableAreaCount = Singleton.getStableAreaCount();
-				
-				if(stableAreaCount > STABLE_AREA_PERIOD)
-				{
-					// Display the markers
-					if(Singleton.hasVoiceCommandBeenSent() == false)
-					{
-						// Using the previous iterations extraction area
-						int centerX = lastExtraction.getTopLeftX() +
-							((lastExtraction.getBottomRightX() - lastExtraction.getTopLeftX()) / 2);
-						int centerY = lastExtraction.getTopLeftY() +
-							((lastExtraction.getBottomRightY() - lastExtraction.getTopLeftY()) / 2);
-						
-						double rLeftRight = 0;
-						double rUpDown = 0;
-						
-						double halfImgWidth = Singleton.getLastProjectedImgWidth() / 2.0;
-						
-						// Offset to center of image = 0 degrees
-						double relativeX = centerX - halfImgWidth;
-						relativeX = relativeX / halfImgWidth;
-						
-						double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
-						
-						// Round up by ten then make int then divide by 10
-						rotateLeftRight = rotateLeftRight * 10;
-						int temp = (int) rotateLeftRight;
-						rotateLeftRight = ((double) temp) / 10;
-						
-						Message msg = CameraWrapper.mHandler.obtainMessage();
-						msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
-						
-						Bundle data = new Bundle();
-						data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
-						data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
-						
-						msg.setData(data);
-						
-						CameraWrapper.mHandler.dispatchMessage(msg);
-						
-						Singleton.voiceCommandSent();
-						
-						Singleton.setApplicationState(Singleton.STATE_PROJECTING_MARKERS);
-					}
-				}
-				if(averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue()))
-				{
-					stableAreaCount = stableAreaCount + 1;
-					Singleton.setStableAreaCount(System.nanoTime());
-					
-					//Log.v("mobileeye", "System.nanoTime = " + System.nanoTime());
-					
-					/**else
-					{
-						long elapsed = Singleton.timeElapsed(System.nanoTime());
-						
-						if(elapsed >= 10)
-						{
-							Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
-						}
-					}**/
-					
-				}
-				else
-				{
-					imgPackage = AreaExtraction.getExtraction(imgPackage);
-					RegionGroup newAreaExtraction = imgPackage.getExtractionArea();
-					
-					if(newAreaExtraction.getRegionSize() >= (lastExtraction.getRegionSize() * 0.7))
-					{
-						stableAreaCount = stableAreaCount + 1;
-						Singleton.setStableAreaCount(stableAreaCount);
-						
-						int newTopLeftX = lastExtraction.getTopLeftX() + newAreaExtraction.getTopLeftX();
-						int newTopLeftY = lastExtraction.getTopLeftY() + newAreaExtraction.getTopLeftY();
-						
-						int newBottomRightX = newTopLeftX + newAreaExtraction.getBottomRightX();
-						int newBottomRightY = newTopLeftY + newAreaExtraction.getBottomRightY();
-						
-						Log.d("mobileeye", "Old - ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+") ("
-								+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightX()+")");
-						Log.d("mobileeye", "New - ("+newTopLeftX+","+newTopLeftY+") ("
-								+newBottomRightX+","+newBottomRightY+")");
-						
-						RegionGroup r = new RegionGroup(newTopLeftX, newTopLeftY, newBottomRightX, newBottomRightY);
-						Singleton.setLastProjectedArea(r);
-						Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
-					}
-					else
-					{
-						Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
-						
-						Message msg = CameraWrapper.mHandler.obtainMessage();
-						msg.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
-						
-						CameraWrapper.mHandler.dispatchMessage(msg);
-					}
-				}
-			}
-			
-			if(mLogData == true)
-			{
-				logData(yuvPixel, imgPackage);
-			}
-			
-			Message msg = CameraWrapper.mHandler.obtainMessage();
-			msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
-			
-			CameraWrapper.mHandler.dispatchMessage(msg);
+			handleSegmentedImage(yuvPixel, imgPackage);
 		}
 	}
-	
+
 	/**
 	 * This function takes into account the state of the application and will extract the correct number
 	 * of pixels accordingly
@@ -213,7 +75,7 @@ public class ImageProcessingThread extends Thread
 		int topOffset = 0;
 		int leftOffset = 0;
 		
-		if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_PROJECTION)
+		if(Singleton.getApplicationState() == Singleton.STATE_TEST_SUITABLE_PROJECTION)
 		{
 			RegionGroup r = Singleton.getLastProjectedArea();
 			targetWidth = r.getBottomRightX() - r.getTopLeftX();
@@ -226,6 +88,175 @@ public class ImageProcessingThread extends Thread
 		return new YUVPixel(mData, mImageSize.width, mImageSize.height, leftOffset, topOffset, targetWidth, targetHeight, scaleDownFactor, targetSizeScaled);
 	}
 	
+	/**
+	 * This function will handle the actions to take for each state after the image has been segmented
+	 * @param imgPackage
+	 */
+	private void handleSegmentedImage(YUVPixel yuvPixel, ImagePackage imgPackage)
+	{
+		if(Singleton.getApplicationState() == Singleton.STATE_FINDING_AREA)
+		{
+			imgPackage = findArea(imgPackage);
+		}
+		else if(Singleton.getApplicationState() == Singleton.STATE_TEST_SUITABLE_PROJECTION)
+		{
+			imgPackage = testSuitableProjectionArea(yuvPixel, imgPackage);
+		}
+		else if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_MARKERS)
+		{
+			settingUpMarkers(imgPackage);
+		}
+		else if(Singleton.getApplicationState() == Singleton.STATE_PROJECTING_MARKERS)
+		{
+			projectingMarkers(yuvPixel, imgPackage);
+		}
+		
+		if(mLogData == true)
+		{
+			logData(yuvPixel, imgPackage);
+		}
+		
+		if(Singleton.getApplicationState() != Singleton.STATE_INIT_APP)
+		{
+			Message msg = CameraWrapper.mHandler.obtainMessage();
+			msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
+			
+			CameraWrapper.mHandler.dispatchMessage(msg);
+		}
+	}
+
+	/**
+	 * This function find's the projectable area in the scene when the state
+	 * of the application is finding an area (No previous data to use)
+	 * @param imgPackage
+	 * @return
+	 */
+	private ImagePackage findArea(ImagePackage imgPackage)
+	{
+		imgPackage = AreaExtraction.getExtraction(imgPackage);
+		RegionGroup areaExtraction = imgPackage.getExtractionArea();
+		
+		if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
+		{
+			Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
+			Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
+			Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
+			Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
+			
+			/**
+			 * State Changed to setting up the projection
+			 */
+			Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
+		}
+		
+		//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+		Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
+		Singleton.updateImageView = b;
+		
+		return imgPackage;
+	}
+	
+	private ImagePackage testSuitableProjectionArea(YUVPixel yuvPixel, ImagePackage imgPackage)
+	{
+		RegionGroup lastExtraction = Singleton.getLastProjectedArea();
+		imgPackage.setRegionGroup(lastExtraction);
+		imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
+		imgPackage.setExtractionArea(lastExtraction);
+		double prevAvg = Singleton.getLastProjectedAreaAverage();
+		
+		long stableAreaCount = Singleton.getStatePeriodSecs(System.nanoTime());
+		
+		if(stableAreaCount > STABLE_AREA_PERIOD)
+		{
+			if(Singleton.hasVoiceCommandBeenSent() == false)
+			{
+				Pair center = getCenterPoint(lastExtraction);
+				
+				double rotateLeftRight = getRotationHorizontal(center);
+				
+				Message msg = CameraWrapper.mHandler.obtainMessage();
+				msg.arg1 = CameraActivity.ROTATE_PROJECTOR_VIEW;
+				
+				Bundle data = new Bundle();
+				data.putDouble(CameraActivity.ROTATE_LEFT_RIGHT_KEY, rotateLeftRight);
+				data.putDouble(CameraActivity.ROTATE_UP_DOWN_KEY, 0);
+				
+				msg.setData(data);
+				
+				CameraWrapper.mHandler.dispatchMessage(msg);
+				
+				Singleton.voiceCommandSent();
+				
+				Singleton.setApplicationState(Singleton.STATE_SETTING_UP_MARKERS);
+			}
+		}
+		else if((averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue())) == false)
+		{
+			imgPackage = AreaExtraction.getExtraction(imgPackage);
+			RegionGroup newAreaExtraction = imgPackage.getExtractionArea();
+			
+			if(newAreaExtraction.getRegionSize() >= (lastExtraction.getRegionSize() * 0.7))
+			{
+				//stableAreaCount = stableAreaCount + 1;
+				//increaseStableCount();
+				
+				int newTopLeftX = lastExtraction.getTopLeftX() + newAreaExtraction.getTopLeftX();
+				int newTopLeftY = lastExtraction.getTopLeftY() + newAreaExtraction.getTopLeftY();
+				
+				int newBottomRightX = newTopLeftX + newAreaExtraction.getBottomRightX();
+				int newBottomRightY = newTopLeftY + newAreaExtraction.getBottomRightY();
+				
+				RegionGroup r = new RegionGroup(newTopLeftX, newTopLeftY, newBottomRightX, newBottomRightY);
+				Singleton.setLastProjectedArea(r);
+				Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+			}
+			else
+			{
+				Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+				
+				Message msg = CameraWrapper.mHandler.obtainMessage();
+				msg.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
+				
+				CameraWrapper.mHandler.dispatchMessage(msg);
+			}
+		}
+		
+		return imgPackage;
+	}
+
+	private void settingUpMarkers(ImagePackage imgPackage)
+	{
+		long elapsedTime = Singleton.getStatePeriodSecs(System.nanoTime());
+		
+		if(elapsedTime > MAX_MARKER_SETUP_TIME)
+		{
+			Message msg = Message.obtain();
+			msg.arg1 = CameraActivity.SHOW_TOAST;
+			
+			Bundle data = msg.getData();
+			data.putString(CameraActivity.TOAST_STRING_KEY, "Timeout on setting up markers");
+			
+			msg.setData(data);
+			CameraWrapper.mHandler.dispatchMessage(msg);
+			
+			Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+		}
+	}
+	
+	private void projectingMarkers(YUVPixel yuvPixel, ImagePackage imgPackage)
+	{
+		RegionGroup lastExtraction = Singleton.getLastProjectedArea();
+		imgPackage.setRegionGroup(lastExtraction);
+		imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
+		imgPackage.setExtractionArea(lastExtraction);
+		double prevAvg = Singleton.getLastProjectedAreaAverage();
+		
+		Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+	}
+	
+	/*******************************************************************************************************************************************************
+	 * Utility Functions
+	 *******************************************************************************************************************************************************/
 	private boolean averagesApproximatelyMatch(double prevAvg, double averagePixelValue)
 	{
 		if(Math.abs(prevAvg - averagePixelValue) < 8)
@@ -317,5 +348,36 @@ public class ImageProcessingThread extends Thread
 		temp = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(),
 				imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 255);
 		Utility.saveImageToSDCard(temp, "9_Area.png");
+	}
+	
+	private Pair getCenterPoint(RegionGroup lastExtraction)
+	{
+		int centerX = lastExtraction.getTopLeftX() +
+			((lastExtraction.getBottomRightX() - lastExtraction.getTopLeftX()) / 2);
+		int centerY = lastExtraction.getTopLeftY() +
+			((lastExtraction.getBottomRightY() - lastExtraction.getTopLeftY()) / 2);
+	
+		return new Pair(centerX, centerY);
+	}
+	
+	private double getRotationHorizontal(Pair center)
+	{
+		double rLeftRight = 0;
+		double rUpDown = 0;
+		
+		double halfImgWidth = Singleton.getLastProjectedImgWidth() / 2.0;
+		
+		// Offset to center of image = 0 degrees
+		double relativeX = center.getArg1() - halfImgWidth;
+		relativeX = relativeX / halfImgWidth;
+		
+		double rotateLeftRight = relativeX * ROTATE_LEFT_RIGHT_MAX;
+		
+		// Round up by ten then make int then divide by 10
+		rotateLeftRight = rotateLeftRight * 10;
+		int temp = (int) rotateLeftRight;
+		rotateLeftRight = ((double) temp) / 10;
+		
+		return rotateLeftRight;
 	}
 }

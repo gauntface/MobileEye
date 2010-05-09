@@ -13,17 +13,18 @@ public class Singleton
 	
 	private static BluetoothConnectionThread mBluetoothConnection = null;
 	
-	public static final int STATE_FINDING_AREA = 0;
-	public static final int STATE_SETTING_UP_PROJECTION = 1;
-	public static final int STATE_PROJECTING_MARKERS = 2;
-	public static final int STATE_PROJECTING_DATA = 3;
+	public static final int STATE_INIT_APP = 0;
+	public static final int STATE_FINDING_AREA = 1;
+	public static final int STATE_TEST_SUITABLE_PROJECTION = 2;
+	public static final int STATE_SETTING_UP_MARKERS = 3;
+	public static final int STATE_PROJECTING_MARKERS = 4;
+	public static final int STATE_PROJECTING_DATA = 5;
 	
-	private static int mApplicationState = STATE_FINDING_AREA;
+	private static int mApplicationState = STATE_INIT_APP;
 	private static boolean mControlMsgSent = false;
 	private static long mTimeElapse = 0;
 	
-	private static long mAreaStableCountStart = 0;
-	private static long mAreaStableCount = 0;
+	private static long mStateTimerStart = 0;
 	
 	private static RegionGroup mLastProjectedArea = null;
 	private static int mLastProjectedAreaImgW = -1;
@@ -44,9 +45,9 @@ public class Singleton
 	
 	public static synchronized void setApplicationState(int s)
 	{
-		if(s == STATE_PROJECTING_MARKERS)
+		if(s == STATE_SETTING_UP_MARKERS)
 		{
-			if(mApplicationState == STATE_SETTING_UP_PROJECTION)
+			if(mApplicationState == STATE_TEST_SUITABLE_PROJECTION)
 			{
 				mApplicationState = s;
 			}
@@ -59,24 +60,18 @@ public class Singleton
 		{
 			mApplicationState = s;
 		}
-		
+		resetStateTimer();
 		mControlMsgSent = false;
 	}
 	
-	public static long getStableAreaCount()
+	public static long getStatePeriodSecs(long t)
 	{
-		return mAreaStableCount;
+		return  (t - mStateTimerStart) / 1000000000;
 	}
 	
-	public static void resetStableAreaCount()
+	public static void resetStateTimer()
 	{
-		mAreaStableCountStart = System.nanoTime();
-		mAreaStableCount = 0;
-	}
-	
-	public static void setStableAreaCount(long a)
-	{
-		mAreaStableCount = mAreaStableCount + (mAreaStableCountStart - a);
+		mStateTimerStart = System.nanoTime();
 	}
 	
 	public static boolean hasVoiceCommandBeenSent()

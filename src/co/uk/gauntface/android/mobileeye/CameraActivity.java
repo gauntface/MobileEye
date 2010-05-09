@@ -14,6 +14,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -22,6 +23,7 @@ import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class CameraActivity extends Activity implements Callback
@@ -31,16 +33,17 @@ public class CameraActivity extends Activity implements Callback
 	 */
 	public static final int START_AUTO_FOCUS = 0;
 	public static final int DRAW_IMAGE_PROCESSING = 1;
+	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
+	public static final int BLUETOOTH_STREAMS_INIT = 3;
+	public static final int ROTATE_PROJECTOR_VIEW = 4;
+	public static final int APPLICATION_STATE_CHANGED = 5;
+	public static final int SHOW_TOAST = 6;
+	public static final int HARDWARE_BUTTON_PRESS = 7;
 	
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
 	
-	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
-	public static final int BLUETOOTH_STREAMS_INIT = 3;
-	
-	public static final int ROTATE_PROJECTOR_VIEW = 4;
-	
-	public static final int APPLICATION_STATE_CHANGED = 5;
+	public static final String TOAST_STRING_KEY = "ShowToastStringKey";
 	
 	public static final String ROTATE_LEFT_RIGHT_KEY = "RotateLeftRightKey";
 	public static final String ROTATE_UP_DOWN_KEY = "RotateUpDownKey";
@@ -54,6 +57,7 @@ public class CameraActivity extends Activity implements Callback
 	private SurfaceHolder mSurfaceHolder;
 	private Handler mHandler;
 	private Button mOutputHistogramBtn;
+	private TextView mStatusTextView;
 	
 	private BluetoothConnectionThread mBluetoothConnection;
 	
@@ -89,6 +93,7 @@ public class CameraActivity extends Activity implements Callback
     						if(status == TextToSpeech.SUCCESS)
     						{
     							mHasTextToSpeech = true;
+    							Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
     						}
     						else
     						{
@@ -246,12 +251,21 @@ public class CameraActivity extends Activity implements Callback
     			else if(msg.arg1 == ROTATE_PROJECTOR_VIEW)
     			{
     				Log.v("mobileeye", "Rotate Projector View Message Received");
+    				mHandler.post(new Runnable(){
+
+						public void run()
+						{
+							mStatusTextView.setText("Set up markers");
+						}
+    					
+    				});
+    				
     				if(mHasTextToSpeech == true && (mTextToSpeechIsFree == true || mTextToSpeechIsFree == false))
     	    		{
     	    			mTextToSpeechIsFree = false;
     	    			Log.v("mobileeye", "Rotate porjector view");
     	    			
-    	    			Singleton.setApplicationState(Singleton.STATE_SETTING_UP_PROJECTION);
+    	    			//Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
     	    			
     	    			double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
     	    			double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
@@ -305,6 +319,49 @@ public class CameraActivity extends Activity implements Callback
     					{
     						String hideMarkers = new String("<HideMarkers></HideMarkers>");
     						mBluetoothConnection.write(hideMarkers.getBytes());
+    						
+    						mHandler.post(new Runnable(){
+
+    							public void run()
+    							{
+    								mStatusTextView.setText("Searching for projectable area");
+    							}
+    	    					
+    	    				});
+    					}
+    				}
+    			}
+    			else if(msg.arg1 == SHOW_TOAST)
+    			{
+    				final String s = msg.getData().getString(TOAST_STRING_KEY); 
+    				mHandler.post(new Runnable(){
+
+						public void run()
+						{
+		    				Toast t = Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG);
+		    				t.show();
+						}
+    					
+    				});
+    			}
+    			else if(msg.arg1 == HARDWARE_BUTTON_PRESS)
+    			{
+    				if(msg.arg2 == KeyEvent.KEYCODE_HEADSETHOOK)
+    				{
+    					if(Singleton.getApplicationState() == Singleton.STATE_SETTING_UP_MARKERS)
+    					{
+    						mHandler.post(new Runnable(){
+
+    							public void run()
+    							{
+    			    				Toast t = Toast.makeText(getApplicationContext(), "Beginning set up projection", Toast.LENGTH_LONG);
+    			    				t.show();
+    			    				mStatusTextView.setText("Looking for markers");
+    							}
+    	    					
+    	    				});
+    						
+    						Singleton.setApplicationState(Singleton.STATE_PROJECTING_MARKERS);
     					}
     				}
     			}
@@ -386,6 +443,9 @@ public class CameraActivity extends Activity implements Callback
 			}
         	
         });
+        
+        mStatusTextView = (TextView) findViewById(R.id.StatusTextView);
+        mStatusTextView.setText("Initialising...");
     }
     
     

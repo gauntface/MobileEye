@@ -158,7 +158,7 @@ public class Utility
 		}
 		catch(Exception e)
 		{
-			Log.e(Singleton.TAG, "Utility Error - " + e);
+			Log.e(Singleton.TAG, "Utility Error [String empty string, depends on state] - " + e);
 			e.printStackTrace();
 		}
 		
