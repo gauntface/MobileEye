@@ -16,10 +16,13 @@ import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Message;
 import android.text.format.Time;
+import android.util.Log;
 
 public class ImageProcessingThread extends Thread
 {
 	private double ROTATE_LEFT_RIGHT_MAX = 20.66;
+	private int WEIGHT_IN_FAVOUR_LIGHT = 255;
+	private int WEIGHT_IN_FAVOUR_DARK = 0;
 	
 	private Size mImageSize;
 	private byte[] mData;
@@ -38,22 +41,35 @@ public class ImageProcessingThread extends Thread
 	
 	public void run()
 	{
-		mData = mData.clone();
-		
-		// Get image pixels
-		YUVPixel yuvPixel = getYUVPixels(SCALE_DOWN_FACTOR);
-		
-		// Segment the image (Needs to take into account the state
-		QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
-		ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), 
-				mLogData,
-				yuvPixel.getImgWidth(),
-				yuvPixel.getImgHeight());
-		
-		// segmentImage returns null when there is no extractable region
-		if(imgPackage != null)
+		if(Singleton.getApplicationState() != Singleton.STATE_INIT_APP)
 		{
-			handleSegmentedImage(yuvPixel, imgPackage);
+			mData = mData.clone();
+			
+			// Get image pixels
+			YUVPixel yuvPixel = getYUVPixels(SCALE_DOWN_FACTOR);
+			
+			int weightInFavour;
+			// Segment the image (Needs to take into account the state
+			if(Singleton.getApplicationState() != Singleton.STATE_PROJECTING_MARKERS)
+			{
+				weightInFavour = WEIGHT_IN_FAVOUR_LIGHT;
+			}
+			else
+			{
+				weightInFavour = WEIGHT_IN_FAVOUR_DARK;
+			}
+			QuickSegment quickSegment = QuickSegmentFactory.getQuickSegment();
+			ImagePackage imgPackage = quickSegment.segmentImage(yuvPixel.getPixels(), 
+					mLogData,
+					yuvPixel.getImgWidth(),
+					yuvPixel.getImgHeight(),
+					weightInFavour);
+			
+			// segmentImage returns null when there is no extractable region
+			if(imgPackage != null)
+			{
+				handleSegmentedImage(yuvPixel, imgPackage);
+			}
 		}
 	}
 
@@ -116,13 +132,10 @@ public class ImageProcessingThread extends Thread
 			logData(yuvPixel, imgPackage);
 		}
 		
-		if(Singleton.getApplicationState() != Singleton.STATE_INIT_APP)
-		{
-			Message msg = CameraWrapper.mHandler.obtainMessage();
-			msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
-			
-			CameraWrapper.mHandler.dispatchMessage(msg);
-		}
+		Message msg = CameraWrapper.mHandler.obtainMessage();
+		msg.arg1 = CameraActivity.DRAW_IMAGE_PROCESSING;
+		
+		CameraWrapper.mHandler.dispatchMessage(msg);
 	}
 
 	/**
@@ -243,7 +256,7 @@ public class ImageProcessingThread extends Thread
 		}
 	}
 	
-	private void projectingMarkers(YUVPixel yuvPixel, ImagePackage imgPackage)
+	private ImagePackage projectingMarkers(YUVPixel yuvPixel, ImagePackage imgPackage)
 	{
 		RegionGroup lastExtraction = Singleton.getLastProjectedArea();
 		imgPackage.setRegionGroup(lastExtraction);
@@ -252,6 +265,28 @@ public class ImageProcessingThread extends Thread
 		double prevAvg = Singleton.getLastProjectedAreaAverage();
 		
 		Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+		
+		imgPackage = AreaExtraction.getExtraction(imgPackage);
+		RegionGroup areaExtraction = imgPackage.getExtractionArea();
+		
+		if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
+		{
+			Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
+			Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
+			Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
+			Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
+			
+			/**
+			 * State Changed to setting up the projection
+			 */
+			Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
+		}
+		
+		//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
+		Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
+		Singleton.updateImageView = b;
+		
+		return imgPackage;
 	}
 	
 	/*******************************************************************************************************************************************************

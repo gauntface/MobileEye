@@ -12,16 +12,17 @@ import android.util.Log;
 
 public class FabMapServerConnection extends Thread
 {
-	private String IP_ADDRESS = "172.21.97.21";
 	private int PORT_ADDRESS = 1112;
+	
+	private String mServerAddr;
 	
 	private Socket mSocketConnection;
 	private DataOutputStream mOutputData;
 	private BufferedReader mInputData;
 	
-	public FabMapServerConnection()
+	public FabMapServerConnection(String a)
 	{
-		
+		mServerAddr = a;
 	}
 	
 	public void run()
@@ -29,7 +30,7 @@ public class FabMapServerConnection extends Thread
 		try
 		{
 			Log.d("mobileeye", "Connectiong to socket...");
-			mSocketConnection = new Socket(IP_ADDRESS, PORT_ADDRESS);
+			mSocketConnection = new Socket(mServerAddr, PORT_ADDRESS);
 			Log.d("mobileeye", "Connected to socket");
 			
 			Log.d("mobileeye", "Openning input output streams...");
@@ -46,7 +47,7 @@ public class FabMapServerConnection extends Thread
 		}
 		catch(UnknownHostException e)
 		{
-			Log.d("mobileeye", "UnknownHostException @ "+IP_ADDRESS+" - "+e);
+			Log.d("mobileeye", "UnknownHostException @ "+mServerAddr+" - "+e);
 		}
 		catch (IOException e)
 		{

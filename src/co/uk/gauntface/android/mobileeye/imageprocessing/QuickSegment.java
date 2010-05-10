@@ -32,6 +32,7 @@ public class QuickSegment
 	private int GROUP_2_COLOR = 60;
 	
 	private boolean mLog;
+	private int mWeightInFavour;
 	
 	private ImagePackage mImgPkg;
 	
@@ -40,9 +41,11 @@ public class QuickSegment
 		
 	}
 	
-	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight)
+	public ImagePackage segmentImage(int[] origPixels, boolean log, int imgWidth, int imgHeight, int weightInFavour)
 	{
 		mLog = log;
+		mWeightInFavour = weightInFavour;
+		
 		mImgPkg = new ImagePackage(origPixels, imgWidth, imgHeight);
 		
 		int[] pixelBuckets = createHistogram(origPixels);
@@ -411,7 +414,13 @@ public class QuickSegment
 	
 	private double getPeakWeight(int peakIndex, int peakSize)
 	{
-		double factor = (double) (peakIndex * BUCKET_RANGE) / (double) MAX_PIXEL_VALUE;
+		double prefValue = (peakIndex * BUCKET_RANGE) - (MAX_PIXEL_VALUE - mWeightInFavour);
+		if(prefValue < 0)
+		{
+			prefValue = -prefValue;
+		}
+		
+		double factor = prefValue / (double) MAX_PIXEL_VALUE;
 		double weight = factor * peakSize;
 		
 		return weight;

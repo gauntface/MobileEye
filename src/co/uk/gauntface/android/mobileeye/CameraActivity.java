@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -34,11 +35,15 @@ public class CameraActivity extends Activity implements Callback
 	public static final int START_AUTO_FOCUS = 0;
 	public static final int DRAW_IMAGE_PROCESSING = 1;
 	public static final int BLUETOOTH_BYTES_RECEIVED = 2;
-	public static final int BLUETOOTH_STREAMS_INIT = 3;
 	public static final int ROTATE_PROJECTOR_VIEW = 4;
 	public static final int APPLICATION_STATE_CHANGED = 5;
 	public static final int SHOW_TOAST = 6;
 	public static final int HARDWARE_BUTTON_PRESS = 7;
+	
+	public static final int BLUETOOTH_CONNECT_FAILED = 8;
+	public static final int BLUETOOTH_CONNECT_SUCCESSFUL = 9;
+	public static final int BLUETOOTH_STREAMS_INIT = 10;
+	public static final int BLUETOOTH_CONNECT_CONFIRMED = 11;
 	
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
@@ -60,7 +65,9 @@ public class CameraActivity extends Activity implements Callback
 	private TextView mStatusTextView;
 	
 	private BluetoothConnectionThread mBluetoothConnection;
+	private boolean mBluetoothConnectionInit;
 	private FabMapServerConnection mFabMapServerConnection;
+	private boolean mFabMapConnectionInit;
 	
 	private boolean mHasTextToSpeech;
 	private TextToSpeech mTextToSpeech;
@@ -94,11 +101,12 @@ public class CameraActivity extends Activity implements Callback
     						if(status == TextToSpeech.SUCCESS)
     						{
     							mHasTextToSpeech = true;
-    							Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+    							updateApplicationState();
     						}
     						else
     						{
-    							
+    							Log.e("mobileeye", "mHasTextToSpeech has failed to succeed");
+    							finish();
     						}
     					}
     				});
@@ -163,6 +171,12 @@ public class CameraActivity extends Activity implements Callback
         // Close the camera now because other activities may need to use it.
         mCamera.closeCamera();
         
+        if(mBluetoothConnection != null)
+    	{
+    		//mBluetoothConnection.kill();
+    		//mBluetoothConnectionInit = false;
+    	}
+        
         if(mHasTextToSpeech == true)
     	{
     		mTextToSpeech.shutdown();
@@ -179,6 +193,7 @@ public class CameraActivity extends Activity implements Callback
     	if(mBluetoothConnection != null)
     	{
     		mBluetoothConnection.cancel();
+    		mBluetoothConnectionInit = false;
     	}
     	
     	if(mHasTextToSpeech == true)
@@ -197,6 +212,7 @@ public class CameraActivity extends Activity implements Callback
     	if(mBluetoothConnection != null)
     	{
     		mBluetoothConnection.kill();
+    		mBluetoothConnectionInit = false;
     	}
     	
     	if(mHasTextToSpeech == true)
@@ -208,6 +224,9 @@ public class CameraActivity extends Activity implements Callback
     
     private void initActivity()
     {
+    	/**
+    	 * Handler
+    	 */
     	mHandler = new Handler(){
     		
     		public void handleMessage(Message msg)
@@ -224,7 +243,7 @@ public class CameraActivity extends Activity implements Callback
     					// Previous auto focus unsuccessful
     				}
     				
-    				// Start Auto Focus
+    				// Re-start Auto Focus
     				if(mCamera.isNull() == false && mCamera.isPreviewing() == true)
     				{
     					//mCamera.startAutoFocus();
@@ -243,7 +262,7 @@ public class CameraActivity extends Activity implements Callback
     			}
     			else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
     			{
-    				Log.v("mobileeye", "Bluetooth Connection Lost Message Received");
+    				Log.v("mobileeye", "Bluetooth Connection Lost");
     				Intent intent = new Intent(getApplicationContext(), MobileEye.class);
     				startActivity(intent);
     				
@@ -251,7 +270,6 @@ public class CameraActivity extends Activity implements Callback
     			}
     			else if(msg.arg1 == ROTATE_PROJECTOR_VIEW)
     			{
-    				Log.v("mobileeye", "Rotate Projector View Message Received");
     				mHandler.post(new Runnable(){
 
 						public void run()
@@ -263,15 +281,11 @@ public class CameraActivity extends Activity implements Callback
     				
     				if(mHasTextToSpeech == true && (mTextToSpeechIsFree == true || mTextToSpeechIsFree == false))
     	    		{
+    					Log.v("mobileeye", "Rotate porjector view");
     	    			mTextToSpeechIsFree = false;
-    	    			Log.v("mobileeye", "Rotate porjector view");
-    	    			
-    	    			//Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
     	    			
     	    			double rLeftRight = msg.getData().getDouble(ROTATE_LEFT_RIGHT_KEY);
     	    			double rUpDown = msg.getData().getDouble(ROTATE_UP_DOWN_KEY);
-    	    			
-    	    			//Log.d("mobileeye", "rLR - " + rLeftRight);
     	    			
     	    			String s;
     				
@@ -298,14 +312,13 @@ public class CameraActivity extends Activity implements Callback
 							
 							public void onUtteranceCompleted(String utteranceId)
 							{
-								//Log.d("mobileeye", "Utterance Complete ID - " + utteranceId);
 							    if(utteranceId.equals(UTTERANCE_ID))
 							    {
-							    	//Log.d("mobileeye", "TextToSpeechIsFree = true");
 							    	mTextToSpeechIsFree = true;
 							    }
 							}
 						});
+    	    			
     	    			HashMap<String, String> hashParams = new HashMap();
     	    			hashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, UTTERANCE_ID);
     	    			mTextToSpeech.speak(s, TextToSpeech.QUEUE_FLUSH, hashParams);
@@ -313,7 +326,6 @@ public class CameraActivity extends Activity implements Callback
     			}
     			else if(msg.arg1 == APPLICATION_STATE_CHANGED)
     			{
-    				Log.v("mobileeye", "Application State Changed");
     				if(mBluetoothConnection != null)
     				{
     					if(Singleton.getApplicationState() == Singleton.STATE_FINDING_AREA)
@@ -366,9 +378,79 @@ public class CameraActivity extends Activity implements Callback
     					}
     				}
     			}
+    			else if(msg.arg1 == BLUETOOTH_CONNECT_FAILED)
+    			{
+    				Log.d("mobileeye", "Bluetooth Connection Lost");
+    				Intent intent = new Intent(getApplicationContext(), MobileEye.class);
+    				startActivity(intent);
+    				
+    				mHandler.post(new Runnable(){
+
+						public void run()
+						{
+							Toast t = Toast.makeText(getApplicationContext(), "Bluetooth Connection Lost", Toast.LENGTH_SHORT);
+							t.show();
+						}
+    					
+    				});
+    				
+    				finish();
+    			}
+    			else if(msg.arg1 == BLUETOOTH_CONNECT_SUCCESSFUL)
+    			{
+    				Log.v("mobileeye", "Bluetooth connection successful");
+    			}
+    			else if(msg.arg1 == BLUETOOTH_STREAMS_INIT)
+    			{
+    				Log.v("mobileeye", "Confirming bluetooth connection with computer");
+    				String s = new String("<ConnectionConfirm></ConnectionConfirm>");
+    				mBluetoothConnection.write(s.getBytes());
+    			}
+    			else if(msg.arg1 == BLUETOOTH_CONNECT_CONFIRMED)
+    			{
+    				Log.v("mobileeye", "Connection confirmed, update application state");
+    				mHandler.post(new Runnable(){
+
+						public void run()
+						{
+							Toast t = Toast.makeText(getApplicationContext(), "Bluetooth Connection Successful", Toast.LENGTH_SHORT);
+							t.show();
+						}
+    					
+    				});
+    				
+    				mBluetoothConnectionInit = true;
+    				updateApplicationState();
+    			}
     		}
     		
     	};
+    	
+    	BluetoothDevice btDevice = Singleton.getBluetoothDevice();
+    	if(btDevice != null)
+    	{
+    		mBluetoothConnectionInit = false;
+    		mBluetoothConnection = new BluetoothConnectionThread(btDevice, mHandler);
+    		mBluetoothConnection.start();
+    	}
+    	else
+    	{
+    		mBluetoothConnectionInit = true;
+    		updateApplicationState();
+    	}
+    	
+    	String addr = Singleton.getFabMapServerAddr();
+    	if(addr != null)
+    	{
+    		mFabMapConnectionInit = false;
+    		mFabMapServerConnection = new FabMapServerConnection(addr);
+    		mFabMapServerConnection.start();
+    	}
+    	else
+    	{
+    		mFabMapConnectionInit = true;
+    		updateApplicationState();
+    	}
     	
     	mHasTextToSpeech = false;
     	mTextToSpeechIsFree = true;
@@ -381,15 +463,6 @@ public class CameraActivity extends Activity implements Callback
     	IntentFilter iF = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);
     	iF.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
     	registerReceiver(buttonReceiver, iF);
-    	
-    	mBluetoothConnection = Singleton.getBluetoothConnection();
-    	if(mBluetoothConnection != null)
-    	{
-    		mBluetoothConnection.setHandler(mHandler);
-    	}
-    	
-    	mFabMapServerConnection = new FabMapServerConnection();
-    	mFabMapServerConnection.start();
     	
     	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
@@ -494,5 +567,13 @@ public class CameraActivity extends Activity implements Callback
 		
 		mCamera.stopPreview();
         mSurfaceHolder = null;
+	}
+	
+	private void updateApplicationState()
+	{
+		if(mHasTextToSpeech == true && mFabMapConnectionInit == true && mBluetoothConnectionInit == true)
+		{
+			Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+		}
 	}
 }

@@ -31,13 +31,15 @@ public class MobileEye extends Activity
 	private BluetoothListAdapter mListAdapter;
 	private ArrayList<BluetoothDevice> mBluetoothDevices;
 	private Handler mHandler;
-	private BluetoothConnectionThread mConnectThread;
+	
+	private BluetoothDevice mChoosenBluetoothDevice;
+	//private BluetoothConnectionThread mConnectThread;
 	
 	private static int REQUEST_ENABLE_BT = 0;
-	public static final int BLUETOOTH_CONNECT_FAILED = 0;
-	public static final int BLUETOOTH_CONNECT_SUCCESSFUL = 1;
-	public static final int BLUETOOTH_STREAMS_INIT = 3;
-	public static final int BLUETOOTH_CONNECT_CONFIRMED = 4;
+	//public static final int BLUETOOTH_CONNECT_FAILED = 0;
+	//public static final int BLUETOOTH_CONNECT_SUCCESSFUL = 1;
+	//public static final int BLUETOOTH_STREAMS_INIT = 3;
+	//public static final int BLUETOOTH_CONNECT_CONFIRMED = 4;
 	
 	// Initialised here as we need to maintain this receiver through
 	// the Activity lifecycle
@@ -149,41 +151,41 @@ public class MobileEye extends Activity
     		
     		public void handleMessage(Message msg)
     		{
-    			if(msg.arg1 == BLUETOOTH_CONNECT_FAILED)
-    			{
-    				Toast t = Toast.makeText(getApplicationContext(),
-    						"Bluetooth Connection Failed: " + msg.arg2,
-    						Toast.LENGTH_LONG);
-    				
-    				t.show();
-    			}
-    			else if(msg.arg1 == BLUETOOTH_CONNECT_SUCCESSFUL)
-    			{
-    				Toast t = Toast.makeText(getApplicationContext(),
-    						"Bluetooth Connection Successful",
-    						Toast.LENGTH_LONG);
-    				
-    				t.show();
-    			}
-    			else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
-    			{
-    				Log.v("mobileeye", "Confirming bluetooth connection with computer");
-    				String s = new String("<ConnectionConfirm></ConnectionConfirm>");
-    				mConnectThread.write(s.getBytes());
-    			}
-    			else if(msg.arg1 == MobileEye.BLUETOOTH_CONNECT_CONFIRMED)
-    			{
-    				Log.v("mobileeye", "Connection confirmed, now launching camera");
-    				startCameraActivity(mConnectThread);
-    			}
-    			else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
-    			{
-    				Toast t = Toast.makeText(getApplicationContext(),
-    						"Bluetooth Connection has been lost",
-    						Toast.LENGTH_LONG);
-    				
-    				t.show();
-    			}
+    			//if(msg.arg1 == BLUETOOTH_CONNECT_FAILED)
+    			//{
+    				//Toast t = Toast.makeText(getApplicationContext(),
+    						//"Bluetooth Connection Failed: " + msg.arg2,
+    						//Toast.LENGTH_LONG);
+    				//
+    				//t.show();
+    			//}
+    			//else if(msg.arg1 == BLUETOOTH_CONNECT_SUCCESSFUL)
+    			//{
+    				//Toast t = Toast.makeText(getApplicationContext(),
+    						//"Bluetooth Connection Successful",
+    						//Toast.LENGTH_LONG);
+    				//
+    				//t.show();
+    			//}
+    			//else if(msg.arg1 == MobileEye.BLUETOOTH_STREAMS_INIT)
+    			//{
+    				//Log.v("mobileeye", "Confirming bluetooth connection with computer");
+    				//String s = new String("<ConnectionConfirm></ConnectionConfirm>");
+    				//mConnectThread.write(s.getBytes());
+    			//}
+    			//else if(msg.arg1 == MobileEye.BLUETOOTH_CONNECT_CONFIRMED)
+    			//{
+    				//Log.v("mobileeye", "Connection confirmed, now launching camera");
+    				//startCameraActivity(mConnectThread);
+    			//}
+    			//else if(msg.arg1 == BluetoothConnectionThread.BLUETOOTH_CONNECTION_LOST)
+    			//{
+    				//Toast t = Toast.makeText(getApplicationContext(),
+    						//"Bluetooth Connection has been lost",
+    						//Toast.LENGTH_LONG);
+    				//
+    				//t.show();
+    			//}
     		}
     		
     	};
@@ -220,7 +222,7 @@ public class MobileEye extends Activity
 			
 			public void onClick(View v)
 			{
-				startCameraActivity(null);
+				startNextActivity(null);
 			}
 		});
     	
@@ -235,12 +237,13 @@ public class MobileEye extends Activity
 			public boolean onItemLongClick(AdapterView<?> parent, View view,
 					int position, long id)
 			{
-				BluetoothDevice device = mBluetoothDevices.get(position);
+				mChoosenBluetoothDevice = mBluetoothDevices.get(position);
 				
 				mBluetoothAdapter.cancelDiscovery();
 				
-				mConnectThread = new BluetoothConnectionThread(device, mHandler);
-				mConnectThread.start();
+				startNextActivity(mChoosenBluetoothDevice);
+				//mConnectThread = new BluetoothConnectionThread(device);
+				//mConnectThread.start();
 				
 				return true;
 			}
@@ -284,17 +287,17 @@ public class MobileEye extends Activity
     	}
     }
     
-    private void startCameraActivity(BluetoothConnectionThread btConnectThread)
+    private void startNextActivity(BluetoothDevice btDevice)
     {
-    	Singleton.setBluetoothConnection(btConnectThread);
+    	Singleton.setBluetoothDevice(btDevice);
 		
 		Toast t = Toast.makeText(getApplicationContext(),
-				"Start Camera Activity",
+				"Starting FabMap Activity",
 				Toast.LENGTH_LONG);
 		
 		t.show();
 		
-		Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
+		Intent intent = new Intent(getApplicationContext(), FabMapInit.class);
 		startActivity(intent);
 		
 		finish();

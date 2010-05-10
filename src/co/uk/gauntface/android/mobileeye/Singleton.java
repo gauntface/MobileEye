@@ -2,6 +2,7 @@ package co.uk.gauntface.android.mobileeye;
 
 import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import co.uk.gauntface.android.mobileeye.imageprocessing.RegionGroup;
+import android.bluetooth.BluetoothDevice;
 import android.graphics.Bitmap;
 import android.text.format.Time;
 import android.util.Log;
@@ -11,7 +12,8 @@ public class Singleton
 	public static final String TAG = new String("mobileeye");
 	public static Bitmap updateImageView;
 	
-	private static BluetoothConnectionThread mBluetoothConnection = null;
+	private static BluetoothDevice mBluetoothDevice = null;
+	private static String mFabMapServerAddress = null;
 	
 	public static final int STATE_INIT_APP = 0;
 	public static final int STATE_FINDING_AREA = 1;
@@ -31,16 +33,24 @@ public class Singleton
 	private static int mLastProjectedAreaImgH = -1;
 	private static double mLastProjectedPixelAverage = -1;
 	
-	public static BluetoothConnectionThread getBluetoothConnection()
+	public static BluetoothDevice getBluetoothDevice()
 	{
-		BluetoothConnectionThread temp = mBluetoothConnection;
-		mBluetoothConnection = null;
-		return temp;
+		return mBluetoothDevice;
 	}
 	
-	public static void setBluetoothConnection(BluetoothConnectionThread c)
+	public static void setBluetoothDevice(BluetoothDevice d)
 	{
-		mBluetoothConnection = c;
+		mBluetoothDevice = d;
+	}
+	
+	public static void setFabMapServerAddr(String a)
+	{
+		mFabMapServerAddress = a;
+	}
+	
+	public static String getFabMapServerAddr()
+	{
+		return mFabMapServerAddress;
 	}
 	
 	public static synchronized void setApplicationState(int s)

@@ -1,0 +1,12 @@
+<LinearLayout android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:background="#ffffff">
+	<ImageView android:layout_height="wrap_content" android:src="@drawable/bt_connect_top_logo" android:layout_width="fill_parent" android:scaleType="center"></ImageView>
+
+	<LinearLayout android:layout_weight="1" android:layout_width="fill_parent" android:layout_height="fill_parent" android:padding="5dip"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Server Address:" android:textColor="#000000" android:textSize="18dip" android:textStyle="bold" android:paddingRight="5dip"></TextView><EditText android:layout_height="wrap_content" android:layout_width="fill_parent" android:textColor="#777777" android:id="@+id/FabMapAddressEditText" android:inputType="textUri"></EditText>
+
+</LinearLayout><LinearLayout android:layout_height="wrap_content" android:layout_width="fill_parent">
+		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:layout_weight="1" android:background="@drawable/btn_full_bg" android:text="Use this URL for FabMap" android:id="@+id/FabMapUseURLBtn"></Button>
+		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/btn_full_bg" android:text="FabMap Skip" android:id="@+id/FabMapSkipBtn"></Button>
+	</LinearLayout>
+
+
+</LinearLayout>

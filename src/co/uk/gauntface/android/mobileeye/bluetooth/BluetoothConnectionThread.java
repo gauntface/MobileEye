@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.util.UUID;
 
 import co.uk.gauntface.android.mobileeye.CameraActivity;
-import co.uk.gauntface.android.mobileeye.MobileEye;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -44,7 +43,7 @@ public class BluetoothConnectionThread extends Thread
 		catch (IOException e)
 		{
 			Message msg = Message.obtain();
-			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
+			msg.arg1 = CameraActivity.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 0;
 			synchronized(mHandler)
 	    	{
@@ -73,7 +72,7 @@ public class BluetoothConnectionThread extends Thread
         catch (IOException connectException)
         {
         	Message msg = Message.obtain();
-			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
+			msg.arg1 = CameraActivity.BLUETOOTH_CONNECT_FAILED;
 			msg.arg2 = 1;
 			synchronized(mHandler)
 	    	{
@@ -89,7 +88,7 @@ public class BluetoothConnectionThread extends Thread
             catch (IOException closeException)
             {
             	Message msg2 = Message.obtain();
-    			msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
+    			msg.arg1 = CameraActivity.BLUETOOTH_CONNECT_FAILED;
     			msg.arg2 = 2;
     			synchronized(mHandler)
     	    	{
@@ -101,7 +100,7 @@ public class BluetoothConnectionThread extends Thread
         }
         
         Message msg = Message.obtain();
-        msg.arg1 = MobileEye.BLUETOOTH_CONNECT_SUCCESSFUL;
+        msg.arg1 = CameraActivity.BLUETOOTH_CONNECT_SUCCESSFUL;
         synchronized(mHandler)
     	{
 			mHandler.sendMessage(msg);
@@ -132,7 +131,7 @@ public class BluetoothConnectionThread extends Thread
         mOutputStream = tmpOut;
         
         Message msg = Message.obtain();
-        msg.arg1 = MobileEye.BLUETOOTH_STREAMS_INIT;
+        msg.arg1 = CameraActivity.BLUETOOTH_STREAMS_INIT;
         synchronized(mHandler)
     	{
 			mHandler.sendMessage(msg);
@@ -161,7 +160,7 @@ public class BluetoothConnectionThread extends Thread
     	        if(data.equals("<ConnectionConfirm></ConnectionConfirm>"))
     	        {
     	        	Message successMsg = Message.obtain();
-    	        	successMsg.arg1 = MobileEye.BLUETOOTH_CONNECT_CONFIRMED;
+    	        	successMsg.arg1 = CameraActivity.BLUETOOTH_CONNECT_CONFIRMED;
                     synchronized(mHandler)
                 	{
             			mHandler.sendMessage(successMsg);
@@ -214,7 +213,7 @@ public class BluetoothConnectionThread extends Thread
         	/**
         	 * We want the connection to die quietly
         	 */
-        	Log.d("mobileeye", "BlueToothConnection.cancel() Exception Cause");
+        	Log.d("mobileeye", "BlueToothConnection.cancel() Exception Cause - " + e);
         	//Message msg = Message.obtain();
 			//msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
 			//msg.arg2 = 3;
@@ -223,12 +222,21 @@ public class BluetoothConnectionThread extends Thread
 			//	mHandler.sendMessage(msg);
 	    	//}
         }
+        catch(Exception e)
+        {
+        	Log.d("mobileeye", "BluetoothConnection.cancel() Exception Caused - " + e);
+        }
     }
     
     public void kill()
     {
     	mClosingConnection = true;
     	cancel();
+    }
+    
+    public void pauseCalled()
+    {
+    	
     }
     
     public void setHandler(Handler h)
