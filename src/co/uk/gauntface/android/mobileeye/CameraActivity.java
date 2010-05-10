@@ -60,6 +60,7 @@ public class CameraActivity extends Activity implements Callback
 	private TextView mStatusTextView;
 	
 	private BluetoothConnectionThread mBluetoothConnection;
+	private FabMapServerConnection mFabMapServerConnection;
 	
 	private boolean mHasTextToSpeech;
 	private TextToSpeech mTextToSpeech;
@@ -386,6 +387,9 @@ public class CameraActivity extends Activity implements Callback
     	{
     		mBluetoothConnection.setHandler(mHandler);
     	}
+    	
+    	mFabMapServerConnection = new FabMapServerConnection();
+    	mFabMapServerConnection.start();
     	
     	mCamera = new CameraWrapper(mHandler);
     	mSurfaceView = (SurfaceView) findViewById(R.id.CameraSurfaceView);
