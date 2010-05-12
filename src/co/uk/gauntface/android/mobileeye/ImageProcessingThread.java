@@ -91,7 +91,7 @@ public class ImageProcessingThread extends Thread
 		int topOffset = 0;
 		int leftOffset = 0;
 		
-		if(Singleton.getApplicationState() == Singleton.STATE_TEST_SUITABLE_PROJECTION)
+		if(Singleton.getApplicationState() >= Singleton.STATE_TEST_SUITABLE_PROJECTION)
 		{
 			RegionGroup r = Singleton.getLastProjectedArea();
 			targetWidth = r.getBottomRightX() - r.getTopLeftX();
@@ -264,26 +264,26 @@ public class ImageProcessingThread extends Thread
 		imgPackage.setExtractionArea(lastExtraction);
 		double prevAvg = Singleton.getLastProjectedAreaAverage();
 		
-		Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
+		//Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
 		
-		imgPackage = AreaExtraction.getExtraction(imgPackage);
-		RegionGroup areaExtraction = imgPackage.getExtractionArea();
+		//imgPackage = AreaExtraction.getExtraction(imgPackage);
+		//RegionGroup areaExtraction = imgPackage.getExtractionArea();
 		
-		if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
-		{
-			Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
-			Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
-			Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
-			Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
+		//if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
+		//{
+			//Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
+			//Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
+			//Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
+			//Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
 			
 			/**
 			 * State Changed to setting up the projection
 			 */
-			Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
-		}
+			//Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
+		//}
 		
-		//Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true);
-		Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
+		Bitmap b = Utility.renderBitmap(imgPackage.getRegionGroupPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
+		//Bitmap b = Utility.renderBitmap(imgPackage.getAreaExtractionPixels(), imgPackage.getImgWidth(), imgPackage.getImgHeight(), true, 127);
 		Singleton.updateImageView = b;
 		
 		return imgPackage;

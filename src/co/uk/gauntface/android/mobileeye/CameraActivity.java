@@ -62,6 +62,8 @@ public class CameraActivity extends Activity implements Callback
 	private SurfaceHolder mSurfaceHolder;
 	private Handler mHandler;
 	private Button mOutputHistogramBtn;
+	private Button mFindObjectBtn;
+	private Button mMarkersInitBtn;
 	private TextView mStatusTextView;
 	
 	private BluetoothConnectionThread mBluetoothConnection;
@@ -426,6 +428,8 @@ public class CameraActivity extends Activity implements Callback
     		
     	};
     	
+    	Singleton.setApplicationState(Singleton.STATE_INIT_APP);
+    	
     	BluetoothDevice btDevice = Singleton.getBluetoothDevice();
     	if(btDevice != null)
     	{
@@ -520,6 +524,28 @@ public class CameraActivity extends Activity implements Callback
 			}
         	
         });
+        
+        mFindObjectBtn = (Button) findViewById(R.id.FindObjectBtn);
+        mFindObjectBtn.setOnClickListener(new OnClickListener() {
+			
+			public void onClick(View v)
+			{
+				Log.d("mobileeye", "Check the fabmap connection and perform the right task");
+			}
+		});
+        
+        mMarkersInitBtn = (Button) findViewById(R.id.MarkersInitialisedBtn);
+        mMarkersInitBtn.setOnClickListener(new OnClickListener() {
+			
+			public void onClick(View v)
+			{
+				Toast t = Toast.makeText(getApplicationContext(), "Beginning set up projection", Toast.LENGTH_LONG);
+				t.show();
+				mStatusTextView.setText("Looking for markers");
+				
+				Singleton.setApplicationState(Singleton.STATE_PROJECTING_MARKERS);
+			}
+		});
         
         mStatusTextView = (TextView) findViewById(R.id.StatusTextView);
         mStatusTextView.setText("Initialising...");

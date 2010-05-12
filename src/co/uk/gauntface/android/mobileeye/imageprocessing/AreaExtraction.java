@@ -6,6 +6,7 @@ import android.util.Log;
 public class AreaExtraction
 {
 	private static final int COLOR_REGION = 255;
+	private static final int COLOR_CENTER_REGION = 0;
 	private static final int NO_COLOR_REGION = -1;
 	
 	private static int[] mPixels;
@@ -234,6 +235,18 @@ public class AreaExtraction
 		double averageRegionValue = 0;
 		int extractionSize = 0;
 		
+		int xAmount = r.getBottomRightX() - r.getTopLeftX();
+		int yAmount = r.getBottomRightY() - r.getTopLeftY();
+		
+		int centerX = r.getTopLeftX() + (xAmount / 2);
+		int centerY = r.getTopLeftY() + (yAmount / 2);
+		
+		int centerXMin = centerX - 5;
+		int centerXMax = centerX + 5;
+		
+		int centerYMin = centerY - 5;
+		int centerYMax = centerY + 5;
+		
 		int yOffset  = 0;
 		for(int y = 0; y < i.getImgHeight(); y++)
 		{
@@ -244,7 +257,15 @@ public class AreaExtraction
 					int t = yOffset + x;
 					averageRegionValue = averageRegionValue + origImg[t];
 					extractionSize = extractionSize + 1;
-					areaPixels[t] = COLOR_REGION;
+					
+					if((y >= centerYMin && y <= centerYMax) && (x >= centerXMin && x <= centerXMax))
+					{
+						areaPixels[t] = COLOR_CENTER_REGION;
+					}
+					else
+					{
+						areaPixels[t] = COLOR_REGION;
+					}
 				}
 				else
 				{

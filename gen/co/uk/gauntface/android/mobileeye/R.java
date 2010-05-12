@@ -22,18 +22,19 @@ public final class R {
         public static final int text_area=0x7f020008;
     }
     public static final class id {
-        public static final int BluetoothConnectBtn=0x7f050006;
-        public static final int BluetoothDeviceListView=0x7f050005;
-        public static final int BluetoothSkipBtn=0x7f050007;
+        public static final int BluetoothConnectBtn=0x7f050007;
+        public static final int BluetoothDeviceListView=0x7f050006;
+        public static final int BluetoothSkipBtn=0x7f050008;
         public static final int CameraSurfaceView=0x7f050000;
-        public static final int FabMapAddressEditText=0x7f050008;
-        public static final int FabMapSkipBtn=0x7f05000a;
-        public static final int FabMapUseURLBtn=0x7f050009;
+        public static final int FabMapAddressEditText=0x7f050009;
+        public static final int FabMapSkipBtn=0x7f05000b;
+        public static final int FabMapUseURLBtn=0x7f05000a;
+        public static final int FindObjectBtn=0x7f050002;
         public static final int ImageProcessedSurfaceView=0x7f050001;
-        public static final int LinearLayout01=0x7f050002;
-        public static final int ListItemTextView=0x7f05000b;
-        public static final int OutputHistogramBtn=0x7f050003;
-        public static final int StatusTextView=0x7f050004;
+        public static final int ListItemTextView=0x7f05000c;
+        public static final int MarkersInitialisedBtn=0x7f050003;
+        public static final int OutputHistogramBtn=0x7f050004;
+        public static final int StatusTextView=0x7f050005;
     }
     public static final class layout {
         public static final int camera=0x7f030000;
