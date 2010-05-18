@@ -28,11 +28,14 @@ public class BluetoothConnectionThread extends Thread
 	private Handler mHandler;
 	private boolean mClosingConnection;
 	
+	private boolean mActivityPaused;
+	
 	public BluetoothConnectionThread(BluetoothDevice d, Handler h)
 	{
 		mBluetoothDevice = d;
 		mHandler = h;
 		mClosingConnection = false;
+		mActivityPaused = false;
 		
 		BluetoothSocket tmp = null;
 		try
@@ -87,13 +90,6 @@ public class BluetoothConnectionThread extends Thread
             }
             catch (IOException closeException)
             {
-            	Message msg2 = Message.obtain();
-    			msg.arg1 = CameraActivity.BLUETOOTH_CONNECT_FAILED;
-    			msg.arg2 = 2;
-    			synchronized(mHandler)
-    	    	{
-    				mHandler.sendMessage(msg);
-    	    	}
             }
             
             return;
@@ -169,11 +165,11 @@ public class BluetoothConnectionThread extends Thread
     		}
     		catch (IOException e1)
     		{
-    			if(mClosingConnection == false)
+    			if(mClosingConnection == false && mActivityPaused == false)
     			{
     				Log.v("mobileeye", "IOException occured - " + e1);
     				Message errorMsg = Message.obtain();
-    				errorMsg.arg1 = BLUETOOTH_CONNECTION_LOST;
+    				errorMsg.arg1 = CameraActivity.BLUETOOTH_CONNECT_FAILED;
     				synchronized(mHandler)
     				{
     					mHandler.sendMessage(errorMsg);
@@ -236,14 +232,34 @@ public class BluetoothConnectionThread extends Thread
     
     public void pauseCalled()
     {
-    	
+    	mActivityPaused = true;
+    	Runnable r = new Runnable(){
+
+			public void run()
+			{
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				pausedTimeOut();
+			}
+		};
+		Thread t = new Thread(r);
+		t.start();
     }
-    
-    public void setHandler(Handler h)
-    {
-    	synchronized(mHandler)
-    	{
-    		mHandler = h;
-        }
-    }
+
+	private void pausedTimeOut()
+	{
+		if(mActivityPaused == true)
+		{
+			kill();
+		}
+	}
+
+	public void activityContinue()
+	{
+		mActivityPaused = false;
+	}
 }

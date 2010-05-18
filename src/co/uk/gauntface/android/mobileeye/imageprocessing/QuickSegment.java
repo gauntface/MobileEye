@@ -131,6 +131,9 @@ public class QuickSegment
 	
 	private ArrayList<Peak> findHillPeaks(int[] data)
 	{
+		int totalNoPixels = mImgPkg.getImgWidth() * mImgPkg.getImgHeight();
+		int minHistSize = (totalNoPixels / ((MAX_PIXEL_VALUE + 1)/BUCKET_RANGE)) / 3;
+		
 		ArrayList<Peak> maxPoints = new ArrayList<Peak>();
 		
 		int minGroupIndex = 0;
@@ -144,7 +147,7 @@ public class QuickSegment
 			if(foundPeak == false)
 			{
 				// Change the 200 to a percentage of the pixels in the image
-				if(data[minGroupIndex] < 200)
+				if(data[minGroupIndex] < minHistSize)
 				{
 					minGroupIndex = i;
 					currentPeakIndex = i;
@@ -174,7 +177,7 @@ public class QuickSegment
 			else
 			{
 				// Change the 200 to a percentage of the pixels in the image
-				if(data[i] < data[maxGroupIndex] && data[i] > 200)
+				if(data[i] < data[maxGroupIndex] && data[i] > minHistSize)
 				{
 					maxGroupIndex = i;
 					peakSize = peakSize + data[i];
@@ -190,7 +193,7 @@ public class QuickSegment
 					peakSize = data[minGroupIndex];
 				}
 				
-				if((i + 1) == data.length)
+				if((i + 1) == data.length && data[i] > minHistSize)
 				{
 					maxPoints.add(new Peak(minGroupIndex, maxGroupIndex, currentPeakIndex, peakSize));
 				}
@@ -306,7 +309,7 @@ public class QuickSegment
 				
 				if((currentPeakWeight / higherPeakWeight) > 0.2)
 				{
-					if(maxGroupValue > p.getMinIndex() && minGroupValue < p.getMinIndex())
+					if(maxGroupValue >= p.getMinIndex() && minGroupValue < p.getMinIndex())
 					{
 						if(maxGroupValue < p.getMaxIndex())
 						{

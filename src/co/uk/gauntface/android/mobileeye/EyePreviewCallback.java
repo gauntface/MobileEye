@@ -10,6 +10,7 @@ public class EyePreviewCallback implements PreviewCallback
 	private Size mPreviewSize;
 	private ImageProcessingThread mProcessingThread;
 	private boolean mLogHistogram = false;
+	private boolean mFindObject = false;
 	
 	private int hackCounter = 0;
 	
@@ -22,7 +23,7 @@ public class EyePreviewCallback implements PreviewCallback
 	{
 		if(mProcessingThread == null || mProcessingThread.isAlive() == false)
 		{
-			mProcessingThread = new ImageProcessingThread(mPreviewSize, data, mLogHistogram);
+			mProcessingThread = new ImageProcessingThread(mPreviewSize, data, mLogHistogram, mFindObject);
 			mProcessingThread.start();
 			mLogHistogram = false;
 		}
@@ -31,6 +32,11 @@ public class EyePreviewCallback implements PreviewCallback
 	public void logNextHistogram()
 	{
 		mLogHistogram = true;
+	}
+
+	public void findObject()
+	{
+		mFindObject = true;
 	}
 
 }

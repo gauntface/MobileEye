@@ -16,6 +16,7 @@ public class CameraWrapper
 	private EyeCameraCallback mErrorCallback;
 	private EyePreviewCallback mPreviewCallback;
 	private EyeAutoFocusCallback mAutoFocusCallback;
+	private EyePictureCallback mPictureCallback;
 	
 	public static Handler mHandler;
 	
@@ -46,6 +47,8 @@ public class CameraWrapper
 		
 		mPreviewCallback = new EyePreviewCallback(previewSize);
 		mCamera.setPreviewCallback(mPreviewCallback);
+		
+		mPictureCallback = new EyePictureCallback();
 		
 		try
 		{
@@ -158,5 +161,17 @@ public class CameraWrapper
 	public void logHistogram()
 	{
 		mPreviewCallback.logNextHistogram();
+	}
+
+	public void findObject()
+	{
+		Log.d("mobileeye", "Find Object Called");
+		//mPreviewCallback.findObject();
+		mCamera.takePicture(null, null, mPictureCallback);
+	}
+
+	public void freePictureCallback()
+	{
+		mPictureCallback.makeFree();
 	}
 }

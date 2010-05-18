@@ -33,6 +33,8 @@ public class Singleton
 	private static int mLastProjectedAreaImgH = -1;
 	private static double mLastProjectedPixelAverage = -1;
 	
+	private static int mProductID = -1;
+	
 	public static BluetoothDevice getBluetoothDevice()
 	{
 		return mBluetoothDevice;
@@ -143,5 +145,15 @@ public class Singleton
 	public static void setLastProjectedImgHeight(int h)
 	{
 		mLastProjectedAreaImgH = h;
+	}
+
+	public static void setProductID(int id)
+	{
+		mProductID =id;
+	}
+	
+	public static int getProductID()
+	{
+		return mProductID;
 	}
 }
