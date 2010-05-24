@@ -346,6 +346,18 @@ public class ImageProcessingThread extends Thread
 			
 			// Send stuff over bluetooth
 			
+			Message msg = CameraWrapper.mHandler.obtainMessage();
+			msg.arg1 = CameraActivity.PROJECTION_MARKER_FOUND;
+			
+			Bundle bundle = msg.getData();
+			bundle.putIntArray(CameraActivity.MARKER_CORNERS_KEY, new int[]{
+					correctedCorners[0].getArg1(), correctedCorners[0].getArg2(),
+					correctedCorners[1].getArg1(), correctedCorners[1].getArg2(),
+					correctedCorners[2].getArg1(), correctedCorners[2].getArg2(),
+					correctedCorners[3].getArg1(), correctedCorners[3].getArg2()});
+			
+			msg.setData(bundle);
+			CameraWrapper.mHandler.dispatchMessage(msg);
 		}
 		else
 		{
