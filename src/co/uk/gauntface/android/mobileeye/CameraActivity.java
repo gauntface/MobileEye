@@ -50,8 +50,8 @@ public class CameraActivity extends Activity implements Callback
 	public static final int FABMAP_STREAMS_INIT = 14;
 	public static final int FABMAP_CONNECT_CONFIRMED = 15;
 	public static final int FABMAP_PHOTO_SENT = 16;
-	
 	public static final int PROJECTION_MARKER_FOUND = 17;
+	public static final int DATA_PROJECTED = 18;
 	
 	public static final int AUTO_FOCUS_SUCCESSFUL = 0;
 	public static final int AUTO_FOCUS_UNSUCCESSFUL = 1;
@@ -744,21 +744,27 @@ public class CameraActivity extends Activity implements Callback
     			}
     			else if(msg.arg1 == PROJECTION_MARKER_FOUND)
     			{
+    				Log.d("mobileeye", "Found Marker Corners");
     				int[] corners = msg.getData().getIntArray(MARKER_CORNERS_KEY);
-    				
-    				String s = new String("<MarkerPosition>"
-    						+Singleton.getProductID()+","
-    						+corners[0]+","
-    						+corners[1]+","
-    						+corners[2]+","
-    						+corners[3]+","
-    						+corners[4]+","
-    						+corners[5]+","
-    						+corners[6]+","
-    						+corners[7]+"</MarkerPosition>");
-    				
-    				if(mBluetoothConnection != null)
+    					
+    				if(corners == null)
     				{
+    					Log.d("mobileeye", "Something is Very Very Very WRONG!!!!!!!!!!!!!!!!!!!!!!!!!");
+    				}
+    				
+    				if(mBluetoothConnection != null && corners != null)
+    				{
+    					String s = new String("<MarkerPosition>"
+        						+Singleton.getProductID()+","
+        						+corners[0]+","
+        						+corners[1]+","
+        						+corners[2]+","
+        						+corners[3]+","
+        						+corners[4]+","
+        						+corners[5]+","
+        						+corners[6]+","
+        						+corners[7]+"</MarkerPosition>");
+    					
     					mBluetoothConnection.write(s.getBytes());
     					Singleton.setApplicationState(Singleton.STATE_PROJECTING_DATA);
     				}
@@ -766,6 +772,11 @@ public class CameraActivity extends Activity implements Callback
     				{
     					Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
     				}
+    			}
+    			else if(msg.arg1 == DATA_PROJECTED)
+    			{
+    				Log.d("mobileeye", "Data Projected - Received from bluetooth");
+    				Singleton.setDataProjected();
     			}
     		}
     		

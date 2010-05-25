@@ -162,6 +162,15 @@ public class BluetoothConnectionThread extends Thread
             			mHandler.sendMessage(successMsg);
                 	}
     	        }
+    	        else if(data.equals("<MarkersDisplayed></MarkersDisplayed>"))
+    	        {
+    	        	Message msgMarkerDisplayed = Message.obtain();
+    	        	msgMarkerDisplayed.arg1 = CameraActivity.DATA_PROJECTED;
+                    synchronized(mHandler)
+                	{
+            			mHandler.sendMessage(msgMarkerDisplayed);
+                	}
+    	        }
     		}
     		catch (IOException e1)
     		{

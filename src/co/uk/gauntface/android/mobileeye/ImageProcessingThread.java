@@ -40,6 +40,9 @@ public class ImageProcessingThread extends Thread
 	private static final long STABLE_AREA_PERIOD = 3;
 	private static final long MAX_MARKER_SETUP_TIME = 20;
 	
+	private static final int PROJECTION_STABLE_PIXEL_VARIANCE = 6;
+	private static final int PROJECTING_DATA_PIXEL_VARIANCE = 15;
+	
 	public ImageProcessingThread(Size imageSize, byte[] data, boolean logData, boolean findObject)
 	{
 		mImageSize = imageSize;
@@ -145,6 +148,10 @@ public class ImageProcessingThread extends Thread
 		{
 			projectingMarkers(yuvPixel, imgPackage);
 		}
+		else if(Singleton.getApplicationState() == Singleton.STATE_PROJECTING_DATA)
+		{
+			projectingData(yuvPixel, imgPackage);
+		}
 		
 		if(mLogData == true)
 		{
@@ -198,8 +205,8 @@ public class ImageProcessingThread extends Thread
 		
 		long stableAreaCount = Singleton.getStatePeriodSecs(System.nanoTime());
 		
-		Log.d("mobileeye", "Test Suitable Projection Area: ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+
-				") ("+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightY()+")");
+		//Log.d("mobileeye", "Test Suitable Projection Area: ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+
+		//		") ("+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightY()+")");
 		
 		if(stableAreaCount > STABLE_AREA_PERIOD)
 		{
@@ -230,7 +237,7 @@ public class ImageProcessingThread extends Thread
 				Singleton.setApplicationState(Singleton.STATE_SETTING_UP_MARKERS);
 			}
 		}
-		else if((averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue())) == false)
+		else if((averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue(), PROJECTION_STABLE_PIXEL_VARIANCE)) == false)
 		{
 			imgPackage = AreaExtraction.getExtraction(imgPackage);
 			RegionGroup newAreaExtraction = imgPackage.getExtractionArea();
@@ -283,6 +290,10 @@ public class ImageProcessingThread extends Thread
 			CameraWrapper.mHandler.dispatchMessage(msg);
 			
 			Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+			Message msg2 = CameraWrapper.mHandler.obtainMessage();
+			msg2.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
+			
+			CameraWrapper.mHandler.dispatchMessage(msg2);
 		}
 	}
 	
@@ -292,9 +303,6 @@ public class ImageProcessingThread extends Thread
 		imgPackage.setRegionGroup(lastExtraction);
 		imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
 		imgPackage.setExtractionArea(lastExtraction);
-		double prevAvg = Singleton.getLastProjectedAreaAverage();
-		
-		
 		
 		Pair[] corners = new MarkerExtraction().extractCorners(imgPackage);
 		
@@ -358,14 +366,20 @@ public class ImageProcessingThread extends Thread
 			
 			msg.setData(bundle);
 			CameraWrapper.mHandler.dispatchMessage(msg);
+			
+			Singleton.setApplicationState(Singleton.STATE_PROJECTING_DATA);
 		}
 		else
 		{
 			Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+			
+			Message msg = CameraWrapper.mHandler.obtainMessage();
+			msg.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
+			
+			CameraWrapper.mHandler.dispatchMessage(msg);
 		}
 		
 		
-		//Singleton.setLastProjectedAreaAverage(yuvPixel.getAveragePixelValue());
 		
 		//imgPackage = AreaExtraction.getExtraction(imgPackage);
 		//RegionGroup areaExtraction = imgPackage.getExtractionArea();
@@ -386,12 +400,49 @@ public class ImageProcessingThread extends Thread
 		return imgPackage;
 	}
 	
+	private void projectingData(YUVPixel yuvPixel, ImagePackage imgPackage)
+	{
+		boolean updateAvg = false;
+		
+		if(Singleton.getDataProjected() == true)
+		{
+			if(Singleton.getStatePeriodSecs(System.nanoTime()) >= 1)
+			{
+				double prevAvg = Singleton.getLastProjectedAreaAverage();
+				
+				if((averagesApproximatelyMatch(prevAvg, yuvPixel.getAveragePixelValue(), PROJECTING_DATA_PIXEL_VARIANCE)) == false)
+				{
+					Log.d("mobileeye", "Projecting Data - PrevAvg = " + prevAvg + " NewAvg = " + yuvPixel.getAveragePixelValue());
+					Singleton.setApplicationState(Singleton.STATE_FINDING_AREA);
+					
+					Message msg = CameraWrapper.mHandler.obtainMessage();
+					msg.arg1 = CameraActivity.APPLICATION_STATE_CHANGED;
+					
+					CameraWrapper.mHandler.dispatchMessage(msg);
+				}
+			}
+			else
+			{
+				updateAvg = true;
+			}
+		}
+		else
+		{
+			updateAvg = true;
+		}
+		
+		if(updateAvg == true)
+		{
+			imgPackage.setAveragePixelValue(yuvPixel.getAveragePixelValue());
+		}
+	}
+	
 	/*******************************************************************************************************************************************************
 	 * Utility Functions
 	 *******************************************************************************************************************************************************/
-	private boolean averagesApproximatelyMatch(double prevAvg, double averagePixelValue)
+	private boolean averagesApproximatelyMatch(double prevAvg, double averagePixelValue, int variance)
 	{
-		if(Math.abs(prevAvg - averagePixelValue) < 8)
+		if(Math.abs(prevAvg - averagePixelValue) < variance)
 		{
 			return true;
 		}

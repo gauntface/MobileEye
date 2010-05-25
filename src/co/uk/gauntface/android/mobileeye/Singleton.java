@@ -35,6 +35,9 @@ public class Singleton
 	
 	private static int mProductID = -1;
 	
+	private static boolean mDataProjected = false;
+	private static boolean mFirstLoopDataProjected = true;
+	
 	public static BluetoothDevice getBluetoothDevice()
 	{
 		return mBluetoothDevice;
@@ -73,7 +76,9 @@ public class Singleton
 			mApplicationState = s;
 		}
 		resetStateTimer();
+		mDataProjected = false;
 		mControlMsgSent = false;
+		mFirstLoopDataProjected = true;
 	}
 	
 	public static long getStatePeriodSecs(long t)
@@ -155,5 +160,23 @@ public class Singleton
 	public static int getProductID()
 	{
 		return mProductID;
+	}
+
+	public static void setDataProjected()
+	{
+		mFirstLoopDataProjected = true;
+		mDataProjected = true;
+	}
+	
+	public static boolean getDataProjected()
+	{
+		return mDataProjected;
+	}
+	
+	public static boolean getFirstLoopDataProjected()
+	{
+		boolean temp = mFirstLoopDataProjected;
+		mFirstLoopDataProjected = false;
+		return temp;
 	}
 }
