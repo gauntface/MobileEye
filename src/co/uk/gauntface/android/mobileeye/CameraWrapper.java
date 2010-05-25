@@ -166,7 +166,6 @@ public class CameraWrapper
 	public void findObject()
 	{
 		Log.d("mobileeye", "Find Object Called");
-		//mPreviewCallback.findObject();
 		mCamera.takePicture(null, null, mPictureCallback);
 	}
 

@@ -7,9 +7,6 @@ import java.io.FileWriter;
 
 import co.uk.gauntface.android.mobileeye.Singleton;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Rect;
 import android.graphics.Bitmap.CompressFormat;
 import android.os.Environment;
 import android.util.Log;

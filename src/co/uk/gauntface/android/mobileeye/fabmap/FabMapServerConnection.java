@@ -1,18 +1,14 @@
 package co.uk.gauntface.android.mobileeye.fabmap;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import co.uk.gauntface.android.mobileeye.CameraActivity;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -178,10 +174,6 @@ public class FabMapServerConnection extends Thread
 	    		}
 	    	}
 	    }
-	    //mInputData.close();
-	    //mOutputData.close();
-	    
-	    //mSocketConnection.close();
 	}
 	
 	
@@ -236,9 +228,12 @@ public class FabMapServerConnection extends Thread
 
 			public void run()
 			{
-				try {
+				try
+				{
 					Thread.sleep(3000);
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e)
+				{
 					e.printStackTrace();
 				}
 				Log.d("mobileeye", "Paused Timeout");

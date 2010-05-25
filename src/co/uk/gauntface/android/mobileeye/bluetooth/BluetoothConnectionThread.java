@@ -1,9 +1,7 @@
 package co.uk.gauntface.android.mobileeye.bluetooth;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.UUID;
 
@@ -62,10 +60,6 @@ public class BluetoothConnectionThread extends Thread
 	
 	public void run()
 	{
-		// Cancel discovery because it will slow down the connection
-		// Done in UI Thread atm
-        //mAdapter.cancelDiscovery();
-
         try
         {
             // Connect the device through the socket. This will block
@@ -219,13 +213,6 @@ public class BluetoothConnectionThread extends Thread
         	 * We want the connection to die quietly
         	 */
         	Log.d("mobileeye", "BlueToothConnection.cancel() Exception Cause - " + e);
-        	//Message msg = Message.obtain();
-			//msg.arg1 = MobileEye.BLUETOOTH_CONNECT_FAILED;
-			//msg.arg2 = 3;
-			//synchronized(mHandler)
-	    	//{
-			//	mHandler.sendMessage(msg);
-	    	//}
         }
         catch(Exception e)
         {
@@ -246,12 +233,15 @@ public class BluetoothConnectionThread extends Thread
 
 			public void run()
 			{
-				try {
+				try
+				{
 					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
+				}
+				catch (InterruptedException e)
+				{
 					e.printStackTrace();
 				}
+				
 				pausedTimeOut();
 			}
 		};

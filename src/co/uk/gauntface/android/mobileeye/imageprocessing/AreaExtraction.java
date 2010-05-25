@@ -1,8 +1,5 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
-import android.util.Log;
-
-
 public class AreaExtraction
 {
 	private static final int COLOR_REGION = 255;
@@ -23,9 +20,6 @@ public class AreaExtraction
 		
 		RegionGroup regionGroup = imgPackage.getRegionGroup();
 		Pair weightedCenter = regionGroup.getWeightedCenter();
-		
-		//int centerPointX = regionGroup.getTopLeftX() + ((int) (regionGroup.getBottomRightX() - regionGroup.getTopLeftX()) / 2);
-		//int centerPointY = regionGroup.getTopLeftY() + ((int) (regionGroup.getBottomRightY() - regionGroup.getTopLeftY()) / 2);
 		
 		int centerPointX = weightedCenter.getArg1();
 		int centerPointY = weightedCenter.getArg2();
@@ -48,7 +42,6 @@ public class AreaExtraction
 		{
 			int xSpread = mBottomRight[0] - mTopLeft[0];
 			int ySpread = mBottomRight[1] - mTopLeft[1];
-			//Log.v(Singleton.TAG, "ySpread = " + ySpread);
 			
 			if(expandUp == true)
 			{

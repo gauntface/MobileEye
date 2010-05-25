@@ -22,8 +22,6 @@ public class MarkerExtraction
 		
 		int markerInitValue = mPixels[centerX + (imgWidth * centerY)];
 		
-		//regionGrowSearch(markerInitValue, centerX, centerY, imgWidth, imgHeight);
-		
 		Pair topLeft = regionSearch(-1, -1, centerX, centerY, imgWidth, imgHeight);
 		Pair topRight = regionSearch(1, -1, centerX, centerY, imgWidth, imgHeight);
 		Pair bottomLeft = regionSearch(-1, 1, centerX, centerY, imgWidth, imgHeight);

@@ -3,7 +3,6 @@ package co.uk.gauntface.android.mobileeye;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
-import android.util.Log;
 
 public class EyePreviewCallback implements PreviewCallback
 {
@@ -11,8 +10,6 @@ public class EyePreviewCallback implements PreviewCallback
 	private ImageProcessingThread mProcessingThread;
 	private boolean mLogHistogram = false;
 	private boolean mFindObject = false;
-	
-	private int hackCounter = 0;
 	
 	public EyePreviewCallback(Size previewSize)
 	{

@@ -1,9 +1,7 @@
 package co.uk.gauntface.android.mobileeye;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;

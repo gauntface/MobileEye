@@ -213,9 +213,6 @@ public class CameraActivity extends Activity implements Callback
         if(mBluetoothConnection != null)
     	{
         	mBluetoothConnection.pauseCalled();
-        	
-    		//mBluetoothConnection.kill();
-    		//mBluetoothConnectionInit = false;
     	}
         
         if(mFabMapServerConnection != null)
@@ -316,7 +313,6 @@ public class CameraActivity extends Activity implements Callback
 					mAutoFocusInit = false;
 					mCamera.startAutoFocus();
 					mFindObjectAfterFocus = true;
-					//mCamera.findObject();
 				}
 				
 			}
@@ -367,7 +363,6 @@ public class CameraActivity extends Activity implements Callback
             
             if (mStartPreviewFail == true)
             {
-                //showCameraErrorAndFinish();
             	Log.e("mobileeye", "ERROR: Start Preview of the camera failed");
             	finish();
                 return;
@@ -389,7 +384,6 @@ public class CameraActivity extends Activity implements Callback
 		
 		if(mCamera.isNull() == true)
 		{
-			// TODO: Return Error
 			return;
 		}
 		
@@ -559,7 +553,6 @@ public class CameraActivity extends Activity implements Callback
     	    			}
     	    			else
     	    			{
-    	    				//s = "Rotate to 0 degrees";
     	    				s= "Set rotation vertically to 0 degrees";
     	    			}
     	    			
@@ -746,11 +739,6 @@ public class CameraActivity extends Activity implements Callback
     			{
     				Log.d("mobileeye", "Found Marker Corners");
     				int[] corners = msg.getData().getIntArray(MARKER_CORNERS_KEY);
-    					
-    				if(corners == null)
-    				{
-    					Log.d("mobileeye", "Something is Very Very Very WRONG!!!!!!!!!!!!!!!!!!!!!!!!!");
-    				}
     				
     				if(mBluetoothConnection != null && corners != null)
     				{

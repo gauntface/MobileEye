@@ -1,7 +1,5 @@
 package co.uk.gauntface.android.mobileeye.imageprocessing;
 
-import android.util.Log;
-
 public class YUVPixel
 {
 	private byte[] mData;

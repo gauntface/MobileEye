@@ -205,9 +205,6 @@ public class ImageProcessingThread extends Thread
 		
 		long stableAreaCount = Singleton.getStatePeriodSecs(System.nanoTime());
 		
-		//Log.d("mobileeye", "Test Suitable Projection Area: ("+lastExtraction.getTopLeftX()+","+lastExtraction.getTopLeftY()+
-		//		") ("+lastExtraction.getBottomRightX()+","+lastExtraction.getBottomRightY()+")");
-		
 		if(stableAreaCount > STABLE_AREA_PERIOD)
 		{
 			if(Singleton.hasVoiceCommandBeenSent() == false)
@@ -244,9 +241,6 @@ public class ImageProcessingThread extends Thread
 			
 			if(newAreaExtraction.getRegionSize() >= (lastExtraction.getRegionSize() * 0.7))
 			{
-				//stableAreaCount = stableAreaCount + 1;
-				//increaseStableCount();
-				
 				int newTopLeftX = lastExtraction.getTopLeftX() + newAreaExtraction.getTopLeftX();
 				int newTopLeftY = lastExtraction.getTopLeftY() + newAreaExtraction.getTopLeftY();
 				
@@ -379,24 +373,6 @@ public class ImageProcessingThread extends Thread
 			CameraWrapper.mHandler.dispatchMessage(msg);
 		}
 		
-		
-		
-		//imgPackage = AreaExtraction.getExtraction(imgPackage);
-		//RegionGroup areaExtraction = imgPackage.getExtractionArea();
-		
-		//if(foundGoodArea(areaExtraction, imgPackage.getImgWidth(), imgPackage.getImgHeight()) == true)
-		//{
-			//Singleton.setLastProjectedArea(imgPackage.getExtractionArea());
-			//Singleton.setLastProjectedImgWidth(imgPackage.getImgWidth());
-			//Singleton.setLastProjectedImgHeight(imgPackage.getImgHeight());
-			//Singleton.setLastProjectedAreaAverage(imgPackage.getAveragePixelValue());
-			
-			/**
-			 * State Changed to setting up the projection
-			 */
-			//Singleton.setApplicationState(Singleton.STATE_TEST_SUITABLE_PROJECTION);
-		//}
-		
 		return imgPackage;
 	}
 	
@@ -446,8 +422,7 @@ public class ImageProcessingThread extends Thread
 		{
 			return true;
 		}
-		//Log.d("mobileeye", "BAD BAD BAD AVG");
-		//Log.d("mobileeye", "prevAvg = "+prevAvg+" newAvg = "+averagePixelValue+" Average Match - " + Math.abs(prevAvg - averagePixelValue));
+		
 		return false;
 	}
 

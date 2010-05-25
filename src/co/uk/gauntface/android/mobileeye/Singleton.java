@@ -1,10 +1,8 @@
 package co.uk.gauntface.android.mobileeye;
 
-import co.uk.gauntface.android.mobileeye.bluetooth.BluetoothConnectionThread;
 import co.uk.gauntface.android.mobileeye.imageprocessing.RegionGroup;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Bitmap;
-import android.text.format.Time;
 import android.util.Log;
 
 public class Singleton
